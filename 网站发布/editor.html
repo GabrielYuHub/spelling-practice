@@ -454,7 +454,7 @@
       renderKids();
     } catch (e) {
       $('gateMsg').textContent = e.status ? e.message
-        : '连接不到在线服务。管理功能只有在线上网站（CloudBase 或 EdgeOne）中才能使用。';
+        : '连接不到在线服务。管理功能只有在线上网站（CloudBase）中才能使用。';
     } finally {
       $('gateBtn').disabled = false;
     }

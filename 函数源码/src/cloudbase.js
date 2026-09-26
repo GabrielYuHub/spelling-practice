@@ -1,7 +1,7 @@
 // 腾讯云 CloudBase 适配层：一个普通云函数，通过 HTTP 网关挂在域名根路径 “/”
 //   …/api/app                  → 接口（业务逻辑见 core.js）
 //   / index.html editor.html wordlib.js words.js → 网页文件（打包时内置，不依赖静态网站托管）
-// 数据存在文档型数据库的集合 spell_kv 中，每条记录是一个“键 → 文本”，与 EdgeOne Blob 的用法一致
+// 数据存在文档型数据库的集合 spell_kv 中，每条记录是一个“键 → 文本”
 // PASSWORD 在打包时通过文件开头的配置注入；ASSETS 由打包脚本生成
 import tcb from '@cloudbase/node-sdk';
 import ASSETS from 'site-assets';

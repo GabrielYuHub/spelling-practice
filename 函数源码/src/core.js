@@ -9,7 +9,7 @@
 //   POST { op:'record', child, pin, record } 提交答题记录并更新熟练度
 //   POST { op:'admin', password, action, ... } 管理操作（见 admin()）
 //
-// 平台适配层（edgeone.js / cloudbase.js）提供：
+// 平台适配层（cloudbase.js）提供：
 //   store：get(key, {type}) / set(key, text, {onlyIfNew}) / setJSON / delete(key) / list({prefix})
 //          可选：update(key, mutate) 条件更新（乐观锁，多设备同时写入不丢数据）；deletePrefix(prefix) 按目录一次删除；listValues(prefix, offset, limit, fromKey) 按键排序、连内容一起分页读取（fromKey：只读键 ≥ 它的）
 //          onlyIfNew 写入时 key 已存在要抛出 code 为 'PRECONDITION_FAILED' 的错误
@@ -48,7 +48,7 @@ const readJSON = (s, key) => s.get(key, { type: 'json' });
 async function updateJSON(s, key, fn) {
   const wrap = cur => { const next = fn(cur == null ? null : JSON.parse(cur)); return next == null ? null : JSON.stringify(next); };
   if (s.update) return s.update(key, wrap);
-  const next = wrap(await s.get(key)); // EdgeOne Blob 不支持条件写入：退回普通读写（备选平台，已知限制）
+  const next = wrap(await s.get(key)); // 存储层不支持条件写入时，退回普通读写
   if (next != null) await s.set(key, next);
   return next != null;
 }

@@ -7,7 +7,6 @@
 
 # 打包生成的文件：里面写着管理密码，用 build.sh 重新生成
 CloudBase发布/
-网站发布/cloud-functions/api/app.js
 
 # 本机私有信息（网站地址、环境名）
 部署信息（私有）.md
