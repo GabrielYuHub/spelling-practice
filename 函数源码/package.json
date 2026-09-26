@@ -1,0 +1,11 @@
+{
+  "name": "spelling-functions",
+  "private": true,
+  "description": "单词拼写练习云函数的打包工具（运行 ./build.sh）",
+  "dependencies": {
+    "@cloudbase/node-sdk": "3.18.3"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.12"
+  }
+}

@@ -1,0 +1,201 @@
+# 英孚三上 Reference（vocabulary + grammar & phrases），Unit 1–6
+# 用法：在管理页“单词表”标签的“批量粘贴导入”里，把整个文件粘贴进去，点“按 ## 标题批量创建单词表”
+# 每个 ## 开头的行是一个单词表的名称，分组都是“英孚三上”；同名的单词表会被覆盖
+# 注：本文件根据课本照片人工整理；中文释义和例句是补充的（课本里没有），导入前建议对照课本检查一遍
+# 改写：collecting coins/stamps/shells 拆成 3 个；1st/2nd/3rd floor 写成 first/second/third floor；
+#       That's cheap/expensive. 拆成两句；It's $49.99. 改成 It's forty-nine dollars.；Yes, I did. / No, I didn't. 拆成两句
+
+## 英孚三上 Unit 1 Pirates
+bay n. 海湾 | The boat is in the bay. | 船在海湾里。
+cave n. 山洞 | The pirates hid in a cave. | 海盗们躲在山洞里。
+island n. 岛 | We can see an island. | 我们能看到一座岛。
+jungle n. 丛林 | Monkeys live in the jungle. | 猴子住在丛林里。
+lake n. 湖 | The lake is very big. | 这个湖很大。
+mountain n. 山 | The mountain is very high. | 这座山很高。
+port n. 港口 | The ship is in the port. | 船在港口里。
+river n. 河 | There are fish in the river. | 河里有鱼。
+town n. 城镇 | I live in a small town. | 我住在一个小镇上。
+village n. 村庄 | My grandma lives in a village. | 我奶奶住在村子里。
+waterfall n. 瀑布 | The waterfall is beautiful. | 这个瀑布很美。
+chest n. 箱子；宝箱 | The gold is in the chest. | 金子在宝箱里。
+compass n. 指南针 | Look at the compass. | 看看指南针。
+gold n. 金子 | The pirates want gold. | 海盗们想要金子。
+key n. 钥匙 | Where is the key? | 钥匙在哪里？
+palm tree 棕榈树
+rope n. 绳子 | Hold the rope. | 抓住绳子。
+shipwreck n. 沉船 | We found a shipwreck. | 我们发现了一艘沉船。
+spade n. 铲子 | Dig with the spade. | 用铲子挖。
+treasure n. 宝藏 | They found the treasure. | 他们找到了宝藏。
+treasure map 藏宝图
+cross v. 穿过；越过 | Cross the river. | 过河。
+go over 越过
+go straight 直走
+stop v. 停下 | Stop at the tree. | 在树那里停下。
+turn left 向左转
+turn right 向右转
+behind prep. 在……后面 | The key is behind the door. | 钥匙在门后面。
+between prep. 在……之间 | The cave is between the trees. | 山洞在两棵树之间。
+by prep. 在……旁边 | The house is by the lake. | 房子在湖边。
+in prep. 在……里面 | The fish is in the river. | 鱼在河里。
+in front of 在……前面
+near prep. 在……附近 | The port is near the town. | 港口在小镇附近。
+next to 紧挨着
+on prep. 在……上面 | The map is on the table. | 地图在桌子上。
+north n. 北方 | Walk to the north. | 往北走。
+south n. 南方 | The lake is in the south. | 湖在南边。
+east n. 东方 | The sun comes up in the east. | 太阳从东方升起。
+west n. 西方 | The village is in the west. | 村庄在西边。
+Go straight. 直走。
+How do I get to the shop? 我怎么去商店？
+Walk straight for 200 meters, then turn left. 直走 200 米，然后向左转。
+They're brothers. 他们是兄弟。
+Their house is small. 他们的房子很小。
+There is a treasure in the cave. 山洞里有宝藏。
+
+## 英孚三上 Unit 2 Free Time Fun
+collecting coins 收集硬币
+collecting stamps 集邮
+collecting shells 收集贝壳
+drawing pictures 画画
+flying a kite 放风筝
+listening to music 听音乐
+making models 做模型
+making jewelry 做首饰
+playing video games 玩电子游戏
+taking photos 拍照
+throwing a frisbee 扔飞盘
+watching movies 看电影
+drums n. 鼓 | He plays the drums. | 他打鼓。
+flute n. 长笛 | She plays the flute. | 她吹长笛。
+guitar n. 吉他 | I can play the guitar. | 我会弹吉他。
+piano n. 钢琴 | My sister plays the piano. | 我姐姐弹钢琴。
+violin n. 小提琴 | Tom plays the violin. | 汤姆拉小提琴。
+always adv. 总是 | I always get up early. | 我总是早起。
+usually adv. 通常 | I usually walk to school. | 我通常走路上学。
+often adv. 经常 | We often play football. | 我们经常踢足球。
+sometimes adv. 有时 | I sometimes watch movies. | 我有时看电影。
+never adv. 从不 | I never eat candy. | 我从不吃糖。
+I often draw pictures. 我经常画画。
+How often do you play the guitar? 你多久弹一次吉他？
+I play the guitar on Sundays. 我每个星期天弹吉他。
+I like to take photos. 我喜欢拍照。
+He likes to watch movies. 他喜欢看电影。
+
+## 英孚三上 Unit 3 In Savannia
+buffalo n. 水牛 | The buffalo is very big. | 水牛很大。
+cheetah n. 猎豹 | The cheetah runs fast. | 猎豹跑得很快。
+crocodile n. 鳄鱼 | The crocodile is in the river. | 鳄鱼在河里。
+elephant n. 大象 | The elephant has a long trunk. | 大象有长长的鼻子。
+gazelle n. 瞪羚 | The gazelle can jump high. | 瞪羚能跳得很高。
+giraffe n. 长颈鹿 | The giraffe has a long neck. | 长颈鹿有长长的脖子。
+gorilla n. 大猩猩 | The gorilla is strong. | 大猩猩很强壮。
+hippo n. 河马 | The hippo likes water. | 河马喜欢水。
+lemur n. 狐猴 | The lemur has a long tail. | 狐猴有一条长尾巴。
+leopard n. 豹 | The leopard has spots. | 豹身上有斑点。
+lion n. 狮子 | The lion is the king of animals. | 狮子是百兽之王。
+rhino n. 犀牛 | The rhino has a horn. | 犀牛有一只角。
+snake n. 蛇 | The snake is long. | 蛇很长。
+zebra n. 斑马 | The zebra has stripes. | 斑马身上有条纹。
+dark adj. 深色的 | It has dark fur. | 它有深色的毛。
+heavy adj. 重的 | The elephant is heavy. | 大象很重。
+light adj. 轻的；浅色的 | The bird is light. | 鸟很轻。
+strong adj. 强壮的 | The lion is strong. | 狮子很强壮。
+thick adj. 厚的；粗的 | The bear has thick fur. | 熊的毛很厚。
+thin adj. 薄的；细的 | The snake is thin. | 这条蛇很细。
+weak adj. 弱的 | The baby bird is weak. | 小鸟很虚弱。
+fur n. 毛；毛皮 | The cat has soft fur. | 猫的毛很软。
+horns n. 角（复数） | The buffalo has big horns. | 水牛有大大的角。
+mane n. 鬃毛 | The lion has a big mane. | 狮子有浓密的鬃毛。
+tail n. 尾巴 | The monkey has a long tail. | 猴子有一条长尾巴。
+trunk n. 象鼻 | The elephant has a trunk. | 大象有象鼻。
+spots n. 斑点（复数） | The cheetah has spots. | 猎豹身上有斑点。
+stripes n. 条纹（复数） | The zebra has black stripes. | 斑马有黑色条纹。
+They have long teeth. 它们有长长的牙齿。
+It has a dark gray tail. 它有一条深灰色的尾巴。
+Does it have any spots or stripes? 它身上有斑点或条纹吗？
+Young lions have stripes and spots. 小狮子身上有条纹和斑点。
+Cheetahs are faster than lions. 猎豹比狮子跑得快。
+Gazelles have stripes, but they don't have spots. 瞪羚身上有条纹，但是没有斑点。
+
+## 英孚三上 Unit 4 On Sale
+mall n. 购物中心 | Let's go to the mall. | 我们去购物中心吧。
+art store 美术用品店
+bakery n. 面包店 | I buy bread at the bakery. | 我在面包店买面包。
+bookstore n. 书店 | The bookstore is on the first floor. | 书店在一楼。
+clothes store 服装店
+electronics store 电器店
+food court 美食广场
+pet store 宠物店
+restrooms n. 洗手间（复数） | Where are the restrooms? | 洗手间在哪里？
+supermarket n. 超市 | Mom is at the supermarket. | 妈妈在超市。
+first floor 一楼
+second floor 二楼
+third floor 三楼
+batteries n. 电池（复数） | I need new batteries. | 我需要新电池。
+book n. 书 | This book is very good. | 这本书很好看。
+camera n. 照相机 | I have a new camera. | 我有一台新相机。
+comic n. 漫画书 | I like to read comic books. | 我喜欢看漫画书。
+dictionary n. 词典 | Look it up in the dictionary. | 在词典里查一查。
+dog food 狗粮
+laptop n. 笔记本电脑 | Dad uses his laptop. | 爸爸在用笔记本电脑。
+magazine n. 杂志 | She is reading a magazine. | 她在看杂志。
+memory card 存储卡
+newspaper n. 报纸 | Grandpa reads the newspaper. | 爷爷在看报纸。
+stickers n. 贴纸（复数） | I have many stickers. | 我有很多贴纸。
+seventy num. 七十 | My grandpa is seventy. | 我爷爷七十岁了。
+eighty num. 八十 | It costs eighty dollars. | 它要八十美元。
+ninety num. 九十 | I got ninety on the test. | 我考了九十分。
+one hundred 一百
+I'm going to the supermarket because I need some milk. 我要去超市，因为我需要一些牛奶。
+I'm going to the bakery to buy bread. 我要去面包店买面包。
+How much is it? 它多少钱？
+It's forty-nine dollars. 它四十九美元。
+That's cheap. 那很便宜。
+That's expensive. 那很贵。
+
+## 英孚三上 Unit 5 Summer Vacation
+beach n. 海滩 | We played on the beach. | 我们在海滩上玩。
+campsite n. 露营地 | We slept at the campsite. | 我们在露营地过夜。
+forest n. 森林 | There are many trees in the forest. | 森林里有很多树。
+hotel n. 酒店；旅馆 | We stayed at a hotel. | 我们住在酒店里。
+mountain n. 山 | We climbed a mountain. | 我们爬了一座山。
+museum n. 博物馆 | We went to the museum. | 我们去了博物馆。
+ocean n. 海洋 | Fish live in the ocean. | 鱼生活在海洋里。
+restaurant n. 餐馆 | We had dinner at a restaurant. | 我们在餐馆吃了晚饭。
+theme park 主题公园
+water park 水上乐园
+zoo n. 动物园 | We saw pandas at the zoo. | 我们在动物园看到了熊猫。
+Australia n. 澳大利亚 | Kangaroos live in Australia. | 袋鼠生活在澳大利亚。
+China n. 中国 | I live in China. | 我住在中国。
+Indonesia n. 印度尼西亚 | Indonesia has many islands. | 印度尼西亚有很多岛屿。
+Singapore n. 新加坡 | Singapore is a small country. | 新加坡是个小国家。
+Thailand n. 泰国 | We went to Thailand. | 我们去了泰国。
+the UK 英国
+the USA 美国
+I went to Australia. 我去了澳大利亚。
+What did you do? 你做了什么？
+I climbed a mountain. 我爬了一座山。
+Did you see any kangaroos? 你看到袋鼠了吗？
+
+## 英孚三上 Unit 6 To Adventure
+alien n. 外星人 | The alien came from space. | 外星人来自太空。
+astronaut n. 宇航员 | I want to be an astronaut. | 我想当宇航员。
+cowboy n. 牛仔 | The cowboy rides a horse. | 牛仔骑着马。
+dragon n. 龙 | The dragon can fly. | 龙会飞。
+fairy n. 仙女 | The fairy has wings. | 仙女有翅膀。
+hero n. 英雄 | He is a hero. | 他是个英雄。
+pirate n. 海盗 | The pirate has a ship. | 海盗有一艘船。
+princess n. 公主 | The princess lives in a castle. | 公主住在城堡里。
+queen n. 女王；王后 | The queen is kind. | 女王很善良。
+robot n. 机器人 | My robot can dance. | 我的机器人会跳舞。
+vampire n. 吸血鬼 | The vampire is scary. | 吸血鬼很吓人。
+villain n. 坏人；反派 | The villain ran away. | 坏人逃跑了。
+wizard n. 巫师 | The wizard has a magic stick. | 巫师有一根魔法棒。
+beginning n. 开头 | I like the beginning of the story. | 我喜欢故事的开头。
+middle n. 中间 | The cat is in the middle. | 猫在中间。
+end n. 结尾 | I like the end of the story. | 我喜欢故事的结尾。
+There was a mean vampire in a cave. 山洞里有一个坏心眼的吸血鬼。
+It was scary. 那很吓人。
+In the beginning, a dragon scared a princess. 故事开头，一条龙吓到了一位公主。
+In the middle, some heroes fought the dragon. 故事中间，一些英雄和龙打了起来。
+At the end, the dragon flew away. 故事结尾，龙飞走了。

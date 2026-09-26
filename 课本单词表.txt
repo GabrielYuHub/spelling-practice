@@ -1,0 +1,239 @@
+# 三年级上册 Words to use（课本 P88–89）和各单元课文中的短语、句子
+# 用法：在管理页“单词表”标签点“📂 选择文件导入”选这个文件；或者把整个文件粘贴进“批量粘贴导入”，点“按 ## 标题批量创建单词表”
+# 每个 ## 开头的行是一个单词表的名称；同名的单词表会被覆盖
+# 注：本文件根据课本照片人工整理，导入前建议对照课本检查一遍
+# 单个单词行末的 “| 例句 | 翻译” 为补充的例句（课本里没有），答对后显示并朗读；短语和句子不加例句；Unit 1–3 新增的短语和句子，中文为补充内容
+# 词前加 * 表示这个词不挖空（用于人名、地名），例如 Children, this is *James.
+
+## 课本三上 Unit 1
+new adj. 新的 | I have a new bag. | 我有一个新书包。
+school n. （中、小）学校 | I go to school every day. | 我每天去上学。
+classmate n. 同班同学 | Tom is my classmate. | 汤姆是我的同班同学。
+teacher n. 教师；老师 | Our teacher is very kind. | 我们的老师很和蔼。
+read v. 阅读 | I like to read books. | 我喜欢读书。
+book n. 书 | This is my English book. | 这是我的英语书。
+study v. 学习 | We study English at school. | 我们在学校学习英语。
+hard adv. 努力地 | She works hard every day. | 她每天都很努力。
+goal n. 目标；目的 | My goal is to read ten books. | 我的目标是读十本书。
+want v. 要；想要 | I want an apple. | 我想要一个苹果。
+friend n. 朋友 | Amy is my good friend. | 艾米是我的好朋友。
+plan n. 计划；打算 | I have a plan for Sunday. | 我有一个星期天的计划。
+follow v. 跟随；跟着 | Please follow me. | 请跟着我。
+study at school 在学校学习
+a new start 一个新的开始
+meet teachers and classmates 认识老师和同学
+read books 读书
+play sports 运动
+be back to school 回到学校
+study hard 努力学习
+set a goal 定一个目标
+It's time for school. 该上学了。
+I want to be a good football player. 我想成为一名优秀的足球运动员。
+Make a plan and follow it. 制订一个计划并按计划去做。
+Children, this is *James. 孩子们，这是詹姆斯。
+He's from *New *Zealand. 他来自新西兰。
+Welcome, *James! 欢迎你，詹姆斯！
+*James, what's your goal for the new term? 詹姆斯，你新学期的目标是什么？
+I want to make some new friends. 我想交一些新朋友。
+I want to speak English well. 我想把英语说好。
+I can help you! 我可以帮你！
+Good! Let's make a goal leaf. 好！我们来做一片目标树叶吧。
+
+
+## 课本三上 Unit 2
+be good at 擅长于……
+draw v. 画画 | I can draw a cat. | 我会画猫。
+tell a story 讲故事
+dance v. 跳舞 | Let's dance together. | 我们一起跳舞吧。
+sing v. 唱歌 | Can you sing a song? | 你会唱歌吗？
+use the computer 使用电脑
+player n. 运动员；参赛选手 | He is a football player. | 他是一名足球运动员。
+run v. 跑；奔跑 | I can run fast. | 我能跑得很快。
+cool adj. 妙极的；酷的 | Your bike is so cool! | 你的自行车真酷！
+be proud of 为……自豪
+fly v. 飞 | Birds can fly. | 鸟会飞。
+jump v. 跳；跳跃 | Rabbits can jump high. | 兔子能跳得很高。
+rabbit n. 兔 | The rabbit likes carrots. | 兔子喜欢胡萝卜。
+walk v. 走；行走 | I walk to school. | 我走路去上学。
+umbrella n. 伞 | Take your umbrella. It's raining. | 带上你的伞，下雨了。
+What's wrong? 怎么了？
+It doesn't matter. 没关系。
+draw a snail 画一只蜗牛
+sing and dance 唱歌跳舞
+look unhappy 看起来不高兴
+need an umbrella 需要一把伞
+guess a riddle 猜一个谜语
+a class meeting 一次班会
+My friend Frog is good at jumping. 我的朋友青蛙擅长跳。
+My friend Rabbit can run very fast. 我的朋友兔子跑得很快。
+You look unhappy. 你看起来不高兴。
+We lost the game. 我们输了比赛。
+You and *Xiaopu are good football players. 你和小朴都是优秀的足球运动员。
+*Minmin, you are good at running. 敏敏，你擅长跑步。
+*Xiaopu, you are good at helping your classmates. 小朴，你很会帮助同学。
+It's cool. 真酷。
+Thank you. 谢谢你。
+I feel better now. 我现在感觉好多了。
+We are proud of you! 我们为你们感到骄傲！
+
+## 课本三上 Unit 3
+garden n. 花园；果园；菜园 | There are flowers in the garden. | 花园里有花。
+welcome v. （打招呼）欢迎（某人的到来） | Welcome to my home! | 欢迎来我家！
+open v. 开；打开 | Please open the door. | 请打开门。
+close v. 关；关闭 | Please close the window. | 请关上窗户。
+flower n. 花 | This flower is red. | 这朵花是红色的。
+vegetable n. 蔬菜 | A carrot is a vegetable. | 胡萝卜是一种蔬菜。
+plant n. 植物 | This plant is green. | 这株植物是绿色的。
+beautiful adj. 美丽的 | The garden is beautiful. | 这个花园很漂亮。
+see v. 看见；见到 | I can see a bird. | 我能看见一只鸟。
+an orange tree 一棵橘子树
+tomato n. 番茄；西红柿 | I like tomato soup. | 我喜欢番茄汤。
+place n. 位置；地点 | This is a nice place. | 这是一个好地方。
+carrot n. 胡萝卜 | The rabbit eats a carrot. | 兔子吃了一根胡萝卜。
+leaf (pl. leaves) n. 叶子 | A leaf falls from the tree. | 一片叶子从树上落下。
+water v. 给……浇水 | Let's water the flowers. | 我们去给花浇水吧。
+grow v. （使）生长 | Plants grow in the sun. | 植物在阳光下生长。
+grandpa n. （外）祖父；爷爷；外公；姥爷 | My grandpa is seventy. | 我爷爷七十岁了。
+grandma n. （外）祖母；奶奶；外婆；姥姥 | My grandma makes cakes. | 我奶奶会做蛋糕。
+tea n. 茶 | Grandpa likes green tea. | 爷爷喜欢绿茶。
+a beautiful garden 一个美丽的花园
+a red flower 一朵红花
+water the vegetables 给蔬菜浇水
+help the plants 帮助植物
+have a look 看一看
+some tea leaves 一些茶叶
+lots of strawberries 很多草莓
+What's this? It's a carrot plant. 这是什么？这是一株胡萝卜。
+I grow many tomatoes in my garden. 我在我的菜园里种了很多西红柿。
+Look! Our garden is beautiful! 看！我们的花园真漂亮！
+Yes. I can see some orange trees and tomatoes. 是的。我能看到一些橘子树和西红柿。
+This place is for vegetables. 这个地方是种蔬菜的。
+It has green leaves. 它有绿色的叶子。
+What's that? It's a sunflower. 那是什么？那是一朵向日葵。
+Look! A bee! 看！一只蜜蜂！
+Bees help the plants. 蜜蜂帮助植物。
+Let's help the plants too. 我们也来帮助植物吧。
+We can water the plants. 我们可以给植物浇水。
+
+## 课本三上 Unit 4
+water n. 水 | I drink water every day. | 我每天喝水。
+find v. 发现 | I can't find my pen. | 我找不到我的钢笔。
+river n. 河；江 | There are fish in the river. | 河里有鱼。
+lake n. 湖；湖泊 | We swim in the lake. | 我们在湖里游泳。
+sea n. 海；海洋 | The sea is blue. | 大海是蓝色的。
+water vapour 水蒸气
+from prep. （表示起始点）从……起；（表示来源）来自 | I am from China. | 我来自中国。
+little by little 缓慢地；一点一点地
+become v. 变成 | Water can become ice. | 水能变成冰。
+cloud n. 云；云朵 | Look at the white cloud. | 看那朵白云。
+rain n. 雨；雨水 | I like the sound of rain. | 我喜欢雨声。
+snow n. 雪 | Children play in the snow. | 孩子们在雪中玩耍。
+ice n. 冰 | Ice is cold. | 冰是冷的。
+water drop 水滴
+where adv. 在哪里；到哪里 | Where is my bag? | 我的书包在哪里？
+cold adj. 寒冷的；冷的 | It is cold today. | 今天很冷。
+when adv. 什么时候；何时 | When do you get up? | 你什么时候起床？
+hot adj. 温度高的；热的 | The soup is hot. | 汤很烫。
+
+## 课本三上 Unit 5
+help v. 帮助 | Can you help me? | 你能帮我吗？
+chore n. 日常事务；家务活 | I do a chore every day. | 我每天做一件家务。
+busy adj. 忙碌的 | Mum is busy today. | 妈妈今天很忙。
+cook v. 烹饪；烹调 | Dad can cook noodles. | 爸爸会煮面条。
+do the dishes 洗碗碟
+clean the table 擦桌子
+walk the dog 遛狗
+young adj. 幼小的 | My sister is young. | 我妹妹还小。
+small adj. 小的 | The mouse is small. | 老鼠很小。
+give your seat 让座
+excuse me 劳驾
+old adj. 旧的 | This is an old book. | 这是一本旧书。
+clothes n. 衣服；服装 | Put your clothes away. | 把你的衣服收好。
+toy n. 玩具 | This toy car is mine. | 这辆玩具车是我的。
+drink water 喝水
+fall v. 掉落；跌落 | Leaves fall in autumn. | 秋天树叶会落下。
+drop v. 使降落；使落下 | Don't drop the cup. | 别把杯子掉了。
+
+## 课本三上 Unit 6
+feel v. 觉得；感到 | I feel happy today. | 我今天感到很开心。
+sometimes adv. 有时 | Sometimes I walk to school. | 有时我走路去上学。
+happy adj. 感到（或显得）快乐的；高兴的 | I am happy to see you. | 见到你我很高兴。
+sad adj. 悲哀的；难过的 | Why are you sad? | 你为什么难过？
+good adj. 令人愉快的；好的 | It's a good day. | 今天是美好的一天。
+bad adj. 令人不快的；坏的 | That is bad news. | 那是个坏消息。
+excited adj. 激动的；兴奋的 | I am excited about the trip. | 我对这次旅行感到很兴奋。
+but conj. 而；相反 | I like cats, but I don't like dogs. | 我喜欢猫，但不喜欢狗。
+scared adj. 害怕的；恐惧的 | I am scared of the dark. | 我怕黑。
+tired adj. 疲倦的；疲劳的 | I am tired after running. | 跑完步我很累。
+unhappy adj. 不快乐的；悲伤的 | The boy looks unhappy. | 那个男孩看起来不开心。
+What a pity! 太可惜了！
+
+## 课本三上 Unit 7
+job n. 工作；职业 | What is your dad's job? | 你爸爸的工作是什么？
+brave adj. 勇敢的 | The firefighter is brave. | 消防员很勇敢。
+driver n. 驾驶员；司机 | My uncle is a bus driver. | 我叔叔是公交车司机。
+careful adj. 小心的；谨慎的 | Be careful on the road. | 在路上要小心。
+police officer n. 警察；警员
+dream n. 梦想；理想 | My dream is to be a doctor. | 我的梦想是当一名医生。
+engineer n. 工程师；设计师 | She is an engineer. | 她是一名工程师。
+writer n. 作家；作者 | I want to be a writer. | 我想成为一名作家。
+doctor n. 医生；大夫 | The doctor helps sick people. | 医生帮助病人。
+chef n. 厨师；（尤指餐馆、旅馆等的）主厨 | The chef makes good food. | 厨师做美味的食物。
+astronaut n. 宇航员；航天员 | The astronaut goes into space. | 宇航员进入太空。
+spaceship n. （航天）飞船 | The spaceship flies to the moon. | 飞船飞向月球。
+difficult adj. 困难的；难做的 | This question is difficult. | 这道题很难。
+What about you? 你（们）呢？
+
+## 课本三上 Unit 8
+library n. 图书馆 | I read books in the library. | 我在图书馆看书。
+there adv. 在那里；到那里 | Let's go there. | 我们去那里吧。
+find the way 找到路
+parent n. 父亲或母亲 | Ask a parent for help. | 请爸爸或妈妈帮忙。
+get to 到达
+walk along 沿着……走
+road n. 路；道路；公路 | Don't play on the road. | 不要在马路上玩。
+left adv. 在左边；向左；n. 左边 | Turn left here. | 在这里向左转。
+right adv. 在右边；向右；n. 右边 | Turn right at the library. | 在图书馆那里向右转。
+ask... for help 请……帮忙
+mum n. 妈妈 | I love my mum. | 我爱我的妈妈。
+museum n. 博物馆 | We visit the museum on Sunday. | 我们星期天去参观博物馆。
+stay v. 停留；待 | Please stay here. | 请待在这里。
+wait for 等待
+phone n. 电话 | Where is my phone? | 我的电话在哪里？
+lost adj. 迷路的 | The little dog is lost. | 小狗迷路了。
+call v. 打电话叫 | Please call a taxi. | 请叫一辆出租车。
+Here we are. 我们到了。
+
+## 课本三上 Unit 9
+Special days 特别的日子
+miss v. 怀念；思念 | I miss my grandma. | 我想念我的奶奶。
+get together 团聚；聚会
+the Double Ninth Festival 重阳节
+celebrate v. 庆祝；庆贺 | We celebrate the Spring Festival. | 我们庆祝春节。
+climb the mountain 爬山
+Chinese New Year 春节；中国农历新年
+the Spring Festival 春节
+visit v. 拜访；看望；参观 | We visit our grandparents. | 我们去看望祖父母。
+the Lantern Festival 元宵节
+holiday n. 假期 | The summer holiday is long. | 暑假很长。
+dragon dance 舞龙表演
+Long time no see. 好久不见。
+It's great to see you again. 很高兴再次见到你（们）。
+Very well. 很好。
+
+## 课本三上 Unit 10
+food n. 食物 | I like Chinese food. | 我喜欢中国菜。
+world n. 世界 | The world is big. | 世界很大。
+famous adj. 著名的；出名的 | Beijing Duck is famous. | 北京烤鸭很有名。
+noodle (pl. noodles) n. 面条 | I have a noodle soup for lunch. | 我午饭吃一碗汤面。
+pizza n. 比萨饼 | Let's have pizza tonight. | 我们今晚吃比萨吧。
+sandwich n. 三明治 | I have a sandwich for breakfast. | 我早饭吃一个三明治。
+hot dog n. 热狗（香肠面包）
+taste v. 尝起来；尝出……的味道 | Can I taste your cake? | 我能尝尝你的蛋糕吗？
+different adj. 不同的；有区别的 | We are different, but we are friends. | 我们不一样，但我们是朋友。
+long adj. （长度或距离）长的 | The river is very long. | 这条河很长。
+fish and chips n. 炸鱼薯条
+beef n. 牛肉 | I don't eat beef. | 我不吃牛肉。
+bread n. 面包 | Mum buys some bread. | 妈妈买了一些面包。
+flour n. （尤指小麦的）面粉 | We make bread with flour. | 我们用面粉做面包。
+cake n. 糕饼；蛋糕 | Here is your birthday cake. | 这是你的生日蛋糕。

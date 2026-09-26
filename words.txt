@@ -1,0 +1,41 @@
+# 单词拼写练习 · 词库
+# 【注意】这是早期的动物词库备份（旧格式，行末 emoji 会被忽略）。现在网页使用管理页里的在线单词表，离线时使用 网站发布/words.js
+# 格式：每行一个单词 —— 英文 中文 emoji（emoji 可省略）
+# 英文可以是词组（如 polar bear），大小写按标准写法保留（如 Monday、I）
+# 以 # 开头的行和空行会被忽略
+
+cat 猫 🐱
+dog 狗 🐶
+pig 猪 🐷
+cow 奶牛 🐮
+ox 公牛 🐂
+duck 鸭子 🦆
+fish 鱼 🐟
+bird 鸟 🐦
+bear 熊 🐻
+lion 狮子 🦁
+tiger 老虎 🐯
+horse 马 🐴
+sheep 绵羊 🐑
+goat 山羊 🐐
+rabbit 兔子 🐰
+mouse 老鼠 🐭
+monkey 猴子 🐵
+panda 熊猫 🐼
+zebra 斑马 🦓
+snake 蛇 🐍
+frog 青蛙 🐸
+chicken 鸡 🐔
+elephant 大象 🐘
+giraffe 长颈鹿 🦒
+butterfly 蝴蝶 🦋
+bee 蜜蜂 🐝
+ant 蚂蚁 🐜
+owl 猫头鹰 🦉
+fox 狐狸 🦊
+wolf 狼 🐺
+whale 鲸 🐋
+dolphin 海豚 🐬
+penguin 企鹅 🐧
+kangaroo 袋鼠 🦘
+polar bear 北极熊 🐻‍❄️

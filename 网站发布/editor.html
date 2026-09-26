@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html lang="zh-CN" translate="no" class="notranslate">
+<head>
+<meta charset="UTF-8">
+<meta name="google" content="notranslate">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>单词拼写管理</title>
+<style>
+  :root {
+    --blue: #2b6cb0;
+    --blue-soft: #e1edf9;
+    --green: #4caf50;
+    --orange: #f0a030;
+    --btn-blue: #1e88e5;
+    --red: #e53935;
+    --text: #333;
+    --muted: #777;
+    --line: #d9e2ec;
+    --card: #fff;
+    --bg: #f0f4f8;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 16px;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 20px 16px 40px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+  h1 { margin: 0; color: var(--blue); font-size: 30px; }
+  a.back { color: var(--blue); text-decoration: none; font-size: 16px; }
+  .card { background: var(--card); border-radius: 16px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,.06); margin-bottom: 16px; }
+  .card h2 { margin: 0 0 6px; font-size: 19px; color: var(--blue); }
+  .hint { color: var(--muted); font-size: 14px; margin: 0 0 12px; line-height: 1.6; }
+  code { background: var(--blue-soft); padding: 1px 6px; border-radius: 5px; font-size: 14px; }
+  textarea, input[type=text], input[type=number], input[type=password], select {
+    border: 1px solid var(--line); border-radius: 10px; font: inherit; background: #fbfdff; color: var(--text);
+  }
+  input[type=text], input[type=number], select { padding: 8px 10px; }
+  textarea {
+    width: 100%; padding: 12px 14px; resize: vertical;
+    font: 16px/1.7 ui-monospace, "SF Mono", Menlo, "PingFang SC", monospace;
+  }
+  textarea:focus, input:focus, select:focus { outline: 2px solid var(--btn-blue); outline-offset: 1px; }
+  #text { min-height: 420px; }
+  #paste { min-height: 140px; }
+  .file-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 10px; }
+  .file-prev { margin-top: 12px; border: 2px solid #c5e1a5; border-radius: 12px; padding: 10px 12px; background: #f7fbf2; }
+  .file-prev h3 { margin: 0 0 8px; font-size: 16px; }
+  .file-prev table td { padding: 5px 4px; vertical-align: middle; }
+  .file-prev input.fname { width: 100%; min-width: 120px; padding: 6px 8px; }
+  .file-prev .st-new { color: var(--green); }
+  .file-prev .st-over { color: var(--orange); }
+  .file-prev .st-bad { color: var(--red); }
+  .btn {
+    border: none; border-radius: 10px; color: #fff; font: inherit; font-size: 16px;
+    padding: 10px 20px; cursor: pointer; background: var(--btn-blue);
+  }
+  .btn:hover { filter: brightness(1.06); }
+  .btn:disabled { opacity: .45; cursor: default; filter: none; }
+  .btn.green { background: var(--green); }
+  .btn.orange { background: var(--orange); }
+  .btn.ghost { background: none; color: var(--blue); border: 1px solid var(--line); }
+  .btn.danger { background: none; color: var(--red); border: 1px solid #f3c6c5; }
+  .btn.small { padding: 6px 12px; font-size: 14px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+  .field { display: flex; align-items: center; gap: 8px; font-size: 15px; }
+  .msg { font-size: 15px; min-height: 1.4em; margin: 10px 0 0; white-space: pre-line; }
+  .msg.good { color: var(--green); }
+  .msg.bad { color: var(--red); }
+  .pill { background: var(--blue-soft); color: var(--blue); border-radius: 999px; padding: 3px 12px; font-size: 14px; }
+  .pill.dirty { background: #fff3e0; color: #b26a00; }
+  [hidden] { display: none !important; }
+
+  /* 标签页 */
+  .tabs { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+  .tab {
+    border: none; background: none; font: inherit; font-size: 17px; padding: 10px 20px; border-radius: 12px;
+    color: var(--muted); cursor: pointer;
+  }
+  .tab.on { background: var(--card); color: var(--blue); font-weight: 600; box-shadow: 0 2px 10px rgba(0,0,0,.06); }
+
+  /* 单词表 */
+  .lists-layout { display: grid; grid-template-columns: 270px minmax(0, 1.5fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+  @media (max-width: 1060px) { .lists-layout { grid-template-columns: 220px minmax(0, 1fr); } .lists-side { grid-column: 1 / -1; } }
+  @media (max-width: 700px) { .lists-layout { grid-template-columns: 1fr; } }
+  .list-nav { list-style: none; margin: 0 0 12px; padding: 0; }
+  .list-nav li { display: flex; align-items: center; gap: 4px; border-radius: 10px; }
+  .list-nav li.on { background: var(--blue-soft); }
+  .list-nav li.grp { margin-top: 4px; }
+  .list-nav .gtoggle {
+    flex: 1; min-width: 0; text-align: left; border: none; background: none; font: inherit; font-size: 15px; font-weight: 600;
+    color: var(--text); padding: 9px 8px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .list-nav .gtoggle small { color: var(--muted); font-weight: normal; margin-left: 4px; }
+  .list-nav .gtoggle .arrow { display: inline-block; width: 1em; color: var(--muted); transition: transform .15s; }
+  .list-nav li.grp.open .gtoggle .arrow { transform: rotate(90deg); }
+  .list-nav .gmenu-btn { border: none; background: none; cursor: pointer; font-size: 15px; padding: 6px 8px; opacity: .7; }
+  .list-nav li.item { padding-left: 14px; }
+  .list-nav li.gmenu { flex-wrap: wrap; gap: 6px; padding: 4px 8px 10px 22px; }
+  .list-nav li.gmenu button { border: 1px solid #d6e2ee; background: #fff; border-radius: 8px; font: inherit; font-size: 13px; padding: 4px 10px; cursor: pointer; }
+  .list-nav li.gmenu button.danger { color: var(--red); border-color: #f3c4c4; }
+  .list-nav li.gmenu button:disabled { opacity: .4; cursor: default; }
+  .list-meta input#listGroup { width: 110px; }
+  .list-nav .pick {
+    flex: 1; min-width: 0; text-align: left; border: none; background: none; font: inherit; padding: 10px 12px;
+    cursor: pointer; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .list-nav .pick small { color: var(--muted); margin-left: 6px; }
+  .list-nav li.on .pick { color: var(--blue); font-weight: 600; }
+  .list-nav .mv { border: none; background: none; cursor: pointer; color: var(--muted); font-size: 13px; padding: 6px; }
+  .list-nav .mv:disabled { visibility: hidden; }
+  .list-meta { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+  .list-meta input[type=text] { width: 200px; }
+  .list-meta input[type=number] { width: 80px; }
+  .status { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .problems { list-style: none; margin: 8px 0 0; padding: 0; max-height: 260px; overflow: auto; font-size: 14px; }
+  .problems li { padding: 6px 0; border-top: 1px solid var(--line); }
+  .problems .error { color: var(--red); }
+  .problems .warn { color: #b26a00; }
+  .problems .src { color: var(--muted); display: block; font-family: ui-monospace, Menlo, monospace; overflow-wrap: anywhere; }
+  .ok { color: var(--green); font-size: 14px; }
+
+  /* 孩子 */
+  .kids { max-width: 780px; }
+  .kid-row { display: grid; grid-template-columns: 1fr 100px 90px 90px 90px auto; gap: 10px; align-items: center; margin-bottom: 10px; }
+  .kid-row input { width: 100%; }
+  .kid-row .pin { letter-spacing: 6px; text-align: center; }
+  .kid-head { display: grid; grid-template-columns: 1fr 100px 90px 90px 90px auto; gap: 10px; color: var(--muted); font-size: 14px; margin-bottom: 6px; }
+  .kid-row .goal, .kid-row .tries, .kid-row .round { text-align: center; }
+  .kid-lists { grid-column: 1 / -1; background: #f7f9fc; border-radius: 10px; padding: 8px 12px; font-size: 15px; }
+  .kid-lists .mode { display: flex; gap: 18px; flex-wrap: wrap; align-items: center; }
+  .kid-lists label { cursor: pointer; white-space: nowrap; }
+  .kid-row .kid-lists input { width: auto; margin: 0 4px 0 0; vertical-align: middle; }
+  .kid-lists .picks { margin-top: 6px; }
+  .kid-lists .grp { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: center; margin-top: 4px; }
+  .kid-lists .grp b { color: var(--muted); font-weight: normal; min-width: 3em; }
+  .warn-text { color: #b26a00; font-size: 14px; }
+
+  /* 学习记录 */
+  .filters { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 500; font-size: 14px; white-space: nowrap; }
+  td.num, th.num { text-align: right; white-space: nowrap; }
+  .table-wrap { overflow-x: auto; }
+  .tag { display: inline-block; border-radius: 6px; padding: 0 8px; font-size: 13px; }
+  .tag.done { background: #e8f5e9; color: #2e7d32; }
+  .tag.part { background: #fff3e0; color: #b26a00; }
+  .ww { display: inline-block; background: #fdecea; color: var(--red); border-radius: 6px; padding: 0 6px; margin: 1px 2px; font-size: 14px; }
+  .sk { color: var(--muted); font-size: 14px; }
+  .empty { color: var(--muted); padding: 16px 0; }
+  .records-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); gap: 16px; align-items: start; }
+  @media (max-width: 960px) { .records-grid { grid-template-columns: 1fr; } }
+  /* 学习报表 */
+  .report-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+  .report-head h2 { margin: 0; }
+  .seg { display: inline-flex; background: #e6edf5; border-radius: 999px; padding: 3px; gap: 3px; }
+  .seg button { border: none; background: none; font: inherit; font-size: 14px; padding: 6px 14px; border-radius: 999px; cursor: pointer; color: var(--muted); }
+  .seg button.on { background: #fff; color: var(--blue); font-weight: 600; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .tile { background: #f6f9fc; border-radius: 12px; padding: 12px 14px; }
+  .tile .k { font-size: 13px; color: var(--muted); }
+  .tile .v { font-size: 26px; font-weight: 600; color: var(--text); margin-top: 2px; }
+  .tile .v small { font-size: 14px; font-weight: 400; color: var(--muted); margin-left: 2px; }
+  .chart-title { font-size: 14px; color: var(--muted); margin-bottom: 6px; }
+  .chart { position: relative; height: 170px; display: flex; align-items: flex-end; gap: 2px; padding-left: 34px; border-bottom: 1px solid #c9d4df; }
+  .chart .grid { position: absolute; left: 34px; right: 0; border-top: 1px dashed #e3e9ef; font-size: 11px; color: var(--muted); }
+  .chart .grid span { position: absolute; left: -34px; top: -8px; width: 30px; text-align: right; }
+  .chart .col { flex: 1; height: 100%; display: flex; align-items: flex-end; justify-content: center; cursor: pointer; position: relative; }
+  .chart .bar { width: 100%; max-width: 38px; background: var(--btn-blue); border-radius: 4px 4px 0 0; min-height: 0; }
+  .chart .col:hover .bar, .chart .col.on .bar { background: #1565c0; }
+  .chart .col.on::after { content: ''; position: absolute; inset: 0; background: rgba(30,136,229,.08); border-radius: 4px; }
+  .xlabels { display: flex; gap: 2px; padding-left: 34px; font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .xlabels span { flex: 1; text-align: center; white-space: nowrap; overflow: visible; }
+  .chart-tip { font-size: 14px; color: var(--text); min-height: 1.6em; margin: 8px 0 14px; }
+  .chart-tip.muted { color: var(--muted); }
+  .report-bottom { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 18px; }
+  @media (max-width: 760px) { .report-bottom { grid-template-columns: 1fr; } }
+  .report-bottom h3 { font-size: 15px; margin: 0 0 8px; color: var(--text); }
+  .rate { display: inline-block; height: 8px; background: var(--btn-blue); border-radius: 0 4px 4px 0; vertical-align: middle; margin-right: 6px; }
+  .kid-lock { grid-column: 1 / -1; font-size: 13px; color: var(--red); margin-top: -4px; }
+
+  /* 设置 */
+  .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 16px; align-items: start; }
+  .pw-form { display: grid; gap: 10px; max-width: 360px; }
+  .pw-form .field { justify-content: space-between; }
+  .pw-form input { width: 220px; padding: 8px 10px; }
+  .check { display: block; margin: 8px 0; font-size: 16px; cursor: pointer; }
+  .check input { width: 18px; height: 18px; vertical-align: -3px; margin-right: 6px; }
+  .import-info { background: var(--blue-soft); border-radius: 10px; padding: 10px 14px; font-size: 15px; line-height: 1.7; margin: 12px 0; }
+  .bar { display: inline-block; height: 8px; background: var(--red); border-radius: 4px; vertical-align: middle; margin-right: 6px; opacity: .75; }
+
+  /* 密码页 */
+  .gate { max-width: 380px; margin: 12vh auto 0; text-align: center; }
+  .gate input {
+    width: 100%; font-size: 20px; padding: 12px 14px; text-align: center; letter-spacing: 4px; margin: 8px 0 14px;
+  }
+  .gate .btn { width: 100%; font-size: 18px; padding: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>⚙️ 单词拼写管理</h1>
+    <a class="back" id="backLink" href="index.html">← 返回练习</a>
+  </header>
+
+  <!-- 密码 -->
+  <div class="card gate" id="gate">
+    <h2>请输入管理密码</h2>
+    <form id="gateForm">
+      <input type="password" id="pwd" name="spell-admin-key" autocomplete="off" readonly>
+      <button class="btn" type="submit" id="gateBtn">进入</button>
+    </form>
+    <p class="msg bad" id="gateMsg"></p>
+  </div>
+
+  <div id="main" hidden>
+    <nav class="tabs">
+      <button class="tab on" data-tab="lists">📚 单词表</button>
+      <button class="tab" data-tab="kids">👧 孩子</button>
+      <button class="tab" data-tab="records">📈 学习记录</button>
+      <button class="tab" data-tab="settings">⚙️ 设置</button>
+    </nav>
+
+    <!-- 单词表 -->
+    <section id="tab-lists">
+      <div class="lists-layout">
+        <div class="card">
+          <h2>单词表</h2>
+          <ul class="list-nav" id="listNav"></ul>
+          <button class="btn ghost small" id="newListBtn">＋ 新建单词表</button>
+        </div>
+
+        <div class="card">
+          <div class="list-meta">
+            <label class="field">名称 <input type="text" id="listName" maxlength="30" placeholder="例如：水果"></label>
+            <label class="field">分组 <input type="text" id="listGroup" maxlength="12" list="groupOptions" placeholder="如：三上"></label>
+            <datalist id="groupOptions"></datalist>
+          </div>
+          <p class="hint">每行一个，采用课本格式：<code>英文 词性. 中文</code>，例如 <code>school n. 学校</code>；词性可省略，如 <code>play sports 运动</code>；英文后的括号是补充说明，不用拼写，如 <code>leaf (pl. leaves) n. 叶子</code>。<code>#</code> 开头的行是注释。<br>可以在行末用 <code>|</code> 加例句和例句翻译，答对后会显示并朗读：<code>school n. 学校 | I go to school every day. | 我每天去上学。</code><br>分组决定练习页里单词表归在哪一类，留空则归到“其他”。每轮题数在“👧 孩子”里按孩子设置。</p>
+          <div class="status">
+            <span class="pill" id="count"></span>
+            <span class="pill dirty" id="dirty" hidden>有未保存的修改</span>
+          </div>
+          <textarea id="text" spellcheck="false"></textarea>
+          <div class="row">
+            <button class="btn green" id="saveBtn">💾 保存</button>
+            <button class="btn ghost" id="undoBtn">撤销未保存的修改</button>
+            <button class="btn danger" id="deleteListBtn">删除这个单词表</button>
+          </div>
+          <p class="msg" id="saveMsg"></p>
+        </div>
+
+        <div class="lists-side">
+          <div class="card">
+            <h2>批量粘贴导入</h2>
+            <p class="hint">把多行单词粘贴到下面（格式同左边），再选择追加或替换。追加时已有的单词会自动跳过。<br>
+            一次建多个单词表：用 <code>## 单词表名称</code> 开头的行分隔各个表，再点“批量创建”；同名的单词表会被覆盖。</p>
+            <div class="file-row">
+              <button class="btn" id="fileBtn">📂 选择文件导入</button>
+              <span class="hint" style="margin:0">可以一次选多个 .txt 文件；没有 ## 标题的文件，用文件名作为单词表名称</span>
+              <input type="file" id="fileInput" accept=".txt,text/plain" multiple hidden>
+            </div>
+            <div class="file-prev" id="filePrev" hidden>
+              <h3>导入预览</h3>
+              <div class="table-wrap"><table id="fileTable"></table></div>
+              <div class="row">
+                <button class="btn green" id="fileOkBtn">✓ 确定导入</button>
+                <button class="btn ghost" id="fileCancelBtn">取消</button>
+              </div>
+            </div>
+            <textarea id="paste" spellcheck="false" placeholder="apple n. 苹果&#10;banana n. 香蕉&#10;&#10;或者一次建多个表：&#10;## 三上 Unit 1&#10;new adj. 新的&#10;## 三上 Unit 2&#10;draw v. 画画"></textarea>
+            <div class="row">
+              <button class="btn" id="appendBtn">追加到当前单词表</button>
+              <button class="btn orange" id="replaceBtn">替换当前单词表</button>
+              <button class="btn green" id="bulkBtn">按 ## 标题批量创建单词表</button>
+            </div>
+            <p class="msg" id="pasteMsg"></p>
+          </div>
+          <div class="card">
+            <h2>格式检查</h2>
+            <p class="ok" id="allOk" hidden>✓ 没有发现问题</p>
+            <ul class="problems" id="problems"></ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 孩子 -->
+    <section id="tab-kids" hidden>
+      <div class="card kids">
+        <h2>孩子名单</h2>
+        <p class="hint">每个孩子在练习页选名字后要输入自己的 4 位 PIN（每台设备只需输入一次）。<br>删除孩子会同时删除他的全部学习记录。<br>每日目标：孩子每天答对这么多题就算打卡（1–500，默认 20），所有单词表都算，按北京时间。<br>
+          每轮题数：一轮最多出多少题（1–100，默认 20），所有单词表、今日复习和错词本都按这个数；单词表的词数不超过它时，一轮出完全部单词。<br>
+          最多尝试：同一道题答错这么多次后，显示正确答案，孩子按“下一个单词”才换题（1–10，默认 6）；答错时不会自动换题，也不能跳过。<br>
+          可以练习：选“全部单词表”时，以后新建的单词表也会自动出现；选“指定分组”时只显示勾选的分组里的单词表（没有填分组的单词表算“其他”），今日复习和错词本也只从这些表里挑词。</p>
+        <div class="kid-head"><span>名字</span><span>PIN（4 位数字）</span><span>每日目标（题）</span><span>最多尝试（次）</span><span>每轮题数</span><span></span></div>
+        <div id="kidRows"></div>
+        <div class="row">
+          <button class="btn ghost small" id="addKidBtn">＋ 添加孩子</button>
+        </div>
+        <p class="warn-text" id="kidWarn"></p>
+        <div class="row">
+          <button class="btn green" id="saveKidsBtn">💾 保存名单</button>
+        </div>
+        <p class="msg" id="kidMsg"></p>
+      </div>
+    </section>
+
+    <!-- 学习记录 -->
+    <section id="tab-records" hidden>
+      <div class="filters">
+        <label class="field">孩子 <select id="fChild"></select></label>
+        <label class="field">单词表 <select id="fList"></select></label>
+        <button class="btn ghost small" id="refreshBtn">刷新</button>
+        <span style="flex:1"></span>
+        <button class="btn danger small" id="clearBtn">清空这个孩子的记录</button>
+      </div>
+      <div class="card" id="reportCard">
+        <div class="report-head">
+          <h2>📊 学习报表</h2>
+          <div class="seg" id="rangeSeg"><button data-days="7" class="on">最近 7 天</button><button data-days="30">最近 30 天</button></div>
+        </div>
+        <div class="tiles" id="repTiles"></div>
+        <div class="chart-title">每天练习用时（分钟）· 按北京时间</div>
+        <div class="chart" id="repChart"></div>
+        <div class="xlabels" id="repX"></div>
+        <div class="chart-tip muted" id="repTip">把鼠标移到柱子上（或点一下），可以看当天的详情</div>
+        <div class="report-bottom">
+          <div>
+            <h3>各单词表正确率（从低到高）</h3>
+            <div class="table-wrap"><table id="repLists"></table></div>
+          </div>
+          <div>
+            <h3>复习与打卡</h3>
+            <div class="tiles" id="repReview"></div>
+          </div>
+        </div>
+        <p class="msg" id="repMsg"></p>
+      </div>
+      <div class="records-grid">
+        <div class="card">
+          <h2>错词排行</h2>
+          <p class="hint">按累计答错次数排序。熟练度分数：答错 +2、答对 −1，分数越高，练习时出现得越多。</p>
+          <div class="table-wrap"><table id="rankTable"></table></div>
+        </div>
+        <div class="card">
+          <h2>历次答题</h2>
+          <div class="table-wrap"><table id="recTable"></table></div>
+          <div class="row"><button class="btn ghost small" id="moreBtn" hidden>加载更多</button></div>
+          <p class="msg" id="recMsg"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 设置 -->
+    <section id="tab-settings" hidden>
+      <div class="settings-grid">
+        <div class="card">
+          <h2>🔑 修改管理密码</h2>
+          <p class="hint">新密码会加密保存在数据库里，立即生效，不需要重新部署。<br>
+            <b>忘记密码怎么办</b>：到 CloudBase 控制台 → 文档型数据库 → 集合 <code>spell_kv</code>，找到字段 <code>k</code> 为 <code>auth.json</code> 的那条数据（_id 为 <code>auth_2ejson</code>），删除后就恢复为原始密码。<br>
+            管理密码连续输错 5 次会锁定 15 分钟。</p>
+          <div class="pw-form">
+            <label class="field">旧密码 <input type="password" id="pwOld" autocomplete="off"></label>
+            <label class="field">新密码 <input type="password" id="pwNew" autocomplete="off" placeholder="4–64 个字符"></label>
+            <label class="field">再输一次 <input type="password" id="pwNew2" autocomplete="off"></label>
+          </div>
+          <div class="row"><button class="btn" id="pwBtn">修改密码</button></div>
+          <p class="msg" id="pwMsg"></p>
+        </div>
+        <div class="card">
+          <h2>📤 导出</h2>
+          <p class="hint"><b>导出单词表</b>：得到一个 txt 文件，每个单词表以 <code>## 名称</code> 开头，可以直接用“按 ## 标题批量创建单词表”导回去。<br>
+            <b>导出完整备份</b>：得到一个 JSON 文件，包括单词表、孩子和 PIN、全部答题记录、熟练度和复习计划。⚠️ 文件里有孩子的 PIN，请妥善保管。</p>
+          <div class="row">
+            <button class="btn" id="exportListsBtn">导出单词表（txt）</button>
+            <button class="btn green" id="exportAllBtn">导出完整备份（JSON）</button>
+          </div>
+          <p class="msg" id="exportMsg"></p>
+        </div>
+        <div class="card">
+          <h2>📥 合并导入</h2>
+          <p class="hint">选择之前导出的完整备份文件，把里面的内容合并进来，<b>不会删除现有数据</b>：<br>
+            · 单词表、孩子按名字对应：同名的更新为备份里的版本，没有的就新增<br>
+            · 答题记录按编号去重，已有的不会重复导入<br>
+            · 熟练度逐个单词比较，保留答题次数更多的一份</p>
+          <input type="file" id="importFile" accept=".json,application/json">
+          <div id="importPreview" hidden>
+            <div class="import-info" id="importInfo"></div>
+            <label class="check"><input type="checkbox" id="impLists" checked> <span id="impListsLabel">单词表</span></label>
+            <label class="check"><input type="checkbox" id="impKids" checked> <span id="impKidsLabel">孩子和 PIN</span></label>
+            <label class="check"><input type="checkbox" id="impRecords" checked> <span id="impRecordsLabel">答题记录和熟练度</span></label>
+            <div class="row"><button class="btn green" id="importBtn">开始合并导入</button></div>
+          </div>
+          <p class="msg" id="importMsg"></p>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script src="words.js"></script>
+<script src="wordlib.js"></script>
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const API = 'api/app';
+
+  let password = '';
+  let cfg = null;              // 完整配置（含 PIN）
+
+  // 管理密码只保存在这个页面的内存里：每次打开、刷新管理页都要重新输入
+  try { sessionStorage.removeItem('spell_admin_pwd'); } catch (e) {} // 清掉旧版本记住的密码
+
+  async function request(url, opts) {
+    const r = await fetch(url, Object.assign({ cache: 'no-store' }, opts));
+    let d = {};
+    try { d = await r.json(); } catch (e) {}
+    if (!r.ok) throw Object.assign(new Error(d.error || ('服务器错误 ' + r.status)), { status: r.status });
+    return d;
+  }
+  const adminAs = (pw, action, extra) => request(API, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(Object.assign({ op: 'admin', password: pw, action }, extra)),
+  });
+  const admin = (action, extra) => adminAs(password, action, extra);
+  const getList = id => request(API + '?op=list&id=' + encodeURIComponent(id));
+
+  function message(id, text, good) {
+    const el = $(id);
+    el.textContent = text;
+    el.className = 'msg ' + (good ? 'good' : 'bad');
+  }
+
+  // ---------- 密码 ----------
+  async function unlock(pwd) {
+    password = pwd;
+    $('gateBtn').disabled = true;
+    $('gateMsg').textContent = '';
+    try {
+      cfg = await admin('config');
+      $('pwd').value = '';
+      $('gate').hidden = true;
+      $('main').hidden = false;
+      $('backLink').textContent = '🔒 退出'; // 登录后：退出并回到练习页（离开页面密码就不再保留）
+      renderListNav();
+      await openList(cfg.lists[0].id);
+      renderKids();
+    } catch (e) {
+      $('gateMsg').textContent = e.status ? e.message
+        : '连接不到在线服务。管理功能只有在线上网站（CloudBase 或 EdgeOne）中才能使用。';
+    } finally {
+      $('gateBtn').disabled = false;
+    }
+  }
+  $('gateForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const v = $('pwd').value.trim();
+    if (v) unlock(v);
+  });
+
+  // ---------- 标签页 ----------
+  let currentTab = 'lists';
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+    const name = t.dataset.tab;
+    if (name === currentTab) return;
+    if (currentTab === 'kids' && kidsDirty() && !confirm('孩子名单有未保存的修改，确定离开吗？')) return;
+    currentTab = name;
+    document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === t));
+    ['lists', 'kids', 'records', 'settings'].forEach(n => { $('tab-' + n).hidden = n !== name; });
+    if (name === 'kids') renderKids();
+    if (name === 'records') openRecords();
+  }));
+
+  // =========================================================
+  // 单词表
+  // =========================================================
+  let currentListId = null;    // null 表示正在新建
+  let savedText = '', savedName = '', savedSize = 20, savedGroup = '';
+  // 分组：没有单独设置时，取名称里第一个空格前的部分（与服务器规则相同）
+  const groupOf = l => (typeof l.group === 'string' ? l.group : (l.name.includes(' ') ? l.name.split(' ')[0] : ''));
+  const groupKey = l => groupOf(l) || '其他'; // 给孩子分配时，没有分组的单词表算“其他”
+  function allGroups() {
+    const gs = [];
+    cfg.lists.forEach(l => { const g = groupKey(l); if (!gs.includes(g)) gs.push(g); });
+    return gs.filter(g => g !== '其他').concat(gs.includes('其他') ? ['其他'] : []);
+  }
+  // 保存单词表后：只分配了指定分组、又不包括这个单词表所在分组的孩子，看不到它
+  function hiddenNote(groups) {
+    const out = [];
+    [...new Set(groups)].forEach(g => {
+      const kids = cfg.children.filter(c => Array.isArray(c.groups) && !c.groups.includes(g)).map(c => c.name);
+      if (kids.length) out.push('⚠️ ' + kids.join('、') + ' 还看不到“' + g + '”分组，需要的话请到“👧 孩子”里勾选。');
+    });
+    return out.join('\n');
+  }
+
+  const listDirty = () => $('text').value !== savedText || $('listName').value.trim() !== savedName
+    || $('listGroup').value.trim() !== savedGroup;
+
+  // 左侧单词表列表：按分组收起 / 展开（正在编辑的单词表所在的分组自动展开）；分组旁的 ⚙️ 是按分组管理
+  const OPEN_KEY = 'spell_admin_open_groups';
+  let openGroups = new Set();
+  try { openGroups = new Set(JSON.parse(localStorage.getItem(OPEN_KEY) || '[]')); } catch (e) {}
+  const saveOpen = () => { try { localStorage.setItem(OPEN_KEY, JSON.stringify([...openGroups])); } catch (e) {} };
+  let menuGroup = null; // 打开了管理菜单的分组
+  let collapsedCurrent = null; // 手动收起了正在编辑的单词表所在的分组
+  // 组里显示时省掉名称开头的组名，例如“课本三上 Unit 1”显示为“Unit 1”
+  const shortName = (l, g) => (g !== '其他' && l.name.startsWith(g + ' ') ? l.name.slice(g.length + 1) : l.name);
+
+  function renderListNav() {
+    const nav = $('listNav');
+    nav.innerHTML = '';
+    const cur = cfg.lists.find(l => l.id === currentListId);
+    const groups = allGroups();
+    groups.forEach((g, gi) => {
+      const lists = cfg.lists.filter(l => groupKey(l) === g);
+      const hasCur = !!cur && groupKey(cur) === g;
+      const open = openGroups.has(g) || (hasCur && collapsedCurrent !== g);
+      const h = document.createElement('li');
+      h.className = 'grp' + (open ? ' open' : '');
+      h.innerHTML = '<button class="gtoggle"><span class="arrow">▸</span> ' + esc(g) + '<small>' + lists.length + ' 个表</small></button>'
+        + '<button class="gmenu-btn" title="管理这个分组">⚙️</button>';
+      h.querySelector('.gtoggle').addEventListener('click', () => {
+        if (open) { openGroups.delete(g); if (hasCur) collapsedCurrent = g; }
+        else { openGroups.add(g); if (collapsedCurrent === g) collapsedCurrent = null; }
+        saveOpen();
+        renderListNav();
+      });
+      h.querySelector('.gmenu-btn').addEventListener('click', () => { menuGroup = menuGroup === g ? null : g; renderListNav(); });
+      nav.appendChild(h);
+      if (menuGroup === g) {
+        const m = document.createElement('li');
+        m.className = 'gmenu';
+        m.innerHTML = '<button data-a="rename">✏️ 改分组名</button>'
+          + '<button data-a="up"' + (gi === 0 || g === '其他' ? ' disabled' : '') + '>▲ 上移</button>'
+          + '<button data-a="down"' + (gi >= groups.length - 1 || g === '其他' || groups[gi + 1] === '其他' ? ' disabled' : '') + '>▼ 下移</button>'
+          + '<button data-a="export">📤 导出</button>'
+          + '<button data-a="delete" class="danger"' + (lists.length >= cfg.lists.length ? ' disabled title="至少要保留一个单词表"' : '') + '>🗑 删除整组</button>';
+        m.querySelectorAll('button').forEach(b => b.addEventListener('click', () => groupAction(g, b.dataset.a)));
+        nav.appendChild(m);
+      }
+      if (!open) return;
+      lists.forEach((l, i) => {
+        const li = document.createElement('li');
+        li.className = 'item' + (l.id === currentListId ? ' on' : '');
+        li.title = l.name;
+        li.innerHTML = '<button class="pick">' + esc(shortName(l, g)) + '<small>' + l.count + ' 词</small></button>'
+          + '<button class="mv" title="上移"' + (i === 0 ? ' disabled' : '') + '>▲</button>'
+          + '<button class="mv" title="下移"' + (i === lists.length - 1 ? ' disabled' : '') + '>▼</button>';
+        const [pick, up, down] = li.querySelectorAll('button');
+        pick.addEventListener('click', () => switchList(l.id));
+        up.addEventListener('click', () => moveList(l.id, 'up'));
+        down.addEventListener('click', () => moveList(l.id, 'down'));
+        nav.appendChild(li);
+      });
+    });
+    $('groupOptions').innerHTML = groups.filter(g => g !== '其他').map(g => '<option value="' + esc(g) + '">').join('');
+    if (currentListId === null && cfg) {
+      const li = document.createElement('li');
+      li.className = 'item on';
+      li.innerHTML = '<button class="pick">（新单词表）</button>';
+      nav.appendChild(li);
+    }
+  }
+
+  async function groupAction(g, a) {
+    const lists = cfg.lists.filter(l => groupKey(l) === g);
+    try {
+      if (a === 'up' || a === 'down') {
+        cfg = (await admin('moveGroup', { group: g, dir: a })).config;
+      } else if (a === 'rename') {
+        const to = (prompt('把分组“' + g + '”改成：\n（名称以“' + g + ' ”开头的单词表会一起改名，孩子的分组分配也会跟着改）', g === '其他' ? '' : g) || '').trim();
+        if (!to || to === g) return;
+        if (to.length > 12) return message('saveMsg', '分组名称最多 12 个字。', false);
+        if (allGroups().includes(to) && !confirm('已经有“' + to + '”分组了，要把两个分组合并吗？')) return;
+        if (listDirty() && !confirm('当前单词表有未保存的修改，继续会丢失这些修改。确定吗？')) return;
+        cfg = (await admin('renameGroup', { from: g, to })).config;
+        if (openGroups.delete(g)) openGroups.add(to);
+        saveOpen();
+        menuGroup = null;
+        // 正在编辑的单词表如果在这个分组里，名称和分组也更新（未保存的修改前面已确认放弃）
+        const curL = cfg.lists.find(l => l.id === currentListId);
+        if (curL) {
+          $('text').value = savedText;
+          $('listName').value = savedName = curL.name;
+          $('listGroup').value = savedGroup = groupOf(curL);
+          refresh();
+        }
+        message('saveMsg', '✓ 已把分组“' + g + '”改成“' + to + '”。', true);
+      } else if (a === 'delete') {
+        if (!confirm('确定删除分组“' + g + '”里的全部 ' + lists.length + ' 个单词表吗？\n' + lists.map(l => l.name).join('、')
+          + '\n\n删除后无法恢复（已有的学习记录会保留）。建议先点“📤 导出”备份。')) return;
+        const d = await admin('deleteGroup', { group: g });
+        cfg = d.config;
+        menuGroup = null;
+        const kids = cfg.children.filter(c => Array.isArray(c.groups) && !c.groups.length).map(c => c.name);
+        if (!cfg.lists.some(l => l.id === currentListId)) { savedText = $('text').value; savedName = $('listName').value.trim(); savedGroup = $('listGroup').value.trim(); await openList(cfg.lists[0].id); }
+        message('saveMsg', '✓ 已删除 ' + d.deleted + ' 个单词表。' + (kids.length ? '\n⚠️ ' + kids.join('、') + ' 现在没有可以练习的分组了，请到“👧 孩子”里重新勾选。' : ''), true);
+      } else if (a === 'export') {
+        message('saveMsg', '正在导出…', true);
+        const texts = await Promise.all(lists.map(l => getList(l.id).then(d => d.text || '')));
+        const d = new Date(), p2 = n => String(n).padStart(2, '0');
+        const stamp = d.getFullYear() + p2(d.getMonth() + 1) + p2(d.getDate()) + '-' + p2(d.getHours()) + p2(d.getMinutes());
+        download('单词表-' + g + '-' + stamp + '.txt', '# 单词拼写练习 · 分组“' + g + '”的单词表（' + lists.length + ' 个）\n'
+          + '# 可以在管理页用“📂 选择文件导入”导回去\n\n'
+          + lists.map((l, i) => '## ' + l.name + '\n' + texts[i].trim() + '\n').join('\n'), 'text/plain;charset=utf-8');
+        message('saveMsg', '✓ 已导出分组“' + g + '”的 ' + lists.length + ' 个单词表。', true);
+      }
+      renderListNav();
+    } catch (e) {
+      message('saveMsg', '操作失败：' + e.message, false);
+    }
+  }
+
+  async function switchList(id) {
+    if (id === currentListId) return;
+    if (listDirty() && !confirm('当前单词表有未保存的修改，确定切换吗？')) return;
+    await openList(id);
+  }
+
+  async function openList(id) {
+    const l = cfg.lists.find(x => x.id === id);
+    message('saveMsg', '', true);
+    let text = '';
+    try {
+      const d = await getList(id);
+      text = d.text != null ? d.text : (typeof WORDS === 'string' ? WORDS.replace(/^\s*\n/, '') : '');
+    } catch (e) {
+      message('saveMsg', '读取单词表失败：' + e.message, false);
+    }
+    currentListId = id;
+    collapsedCurrent = null;
+    savedText = text; savedName = l.name; savedSize = l.roundSize || 20; savedGroup = groupOf(l);
+    $('listGroup').value = savedGroup;
+    $('text').value = text;
+    $('listName').value = l.name;
+    $('deleteListBtn').hidden = false;
+    renderListNav();
+    refresh();
+  }
+
+  $('newListBtn').addEventListener('click', () => {
+    if (listDirty() && !confirm('当前单词表有未保存的修改，确定新建吗？')) return;
+    currentListId = null;
+    savedText = ''; savedName = ''; savedSize = 20; savedGroup = '';
+    $('listGroup').value = '';
+    $('text').value = '';
+    $('listName').value = '';
+    $('deleteListBtn').hidden = true;
+    message('saveMsg', '填好名称和单词后点“保存”。', true);
+    renderListNav();
+    refresh();
+    $('listName').focus();
+  });
+
+  async function moveList(id, dir) {
+    try {
+      cfg = (await admin('moveList', { id, dir })).config;
+      renderListNav();
+    } catch (e) {
+      message('saveMsg', '调整顺序失败：' + e.message, false);
+    }
+  }
+
+  function refresh() {
+    const text = $('text').value;
+    const { words, problems } = WordLib.analyze(text);
+    $('count').textContent = '共 ' + words.length + ' 个单词';
+    $('dirty').hidden = !listDirty();
+    $('saveBtn').disabled = !words.length;
+    const ul = $('problems');
+    ul.innerHTML = '';
+    problems.forEach(p => {
+      const li = document.createElement('li');
+      li.className = p.level;
+      li.textContent = '第 ' + p.line + ' 行：' + (p.level === 'error' ? '（会被跳过）' : '') + p.msg;
+      const src = document.createElement('span');
+      src.className = 'src';
+      src.textContent = p.text;
+      li.appendChild(src);
+      ul.appendChild(li);
+    });
+    $('allOk').hidden = problems.length > 0;
+  }
+  ['text', 'listName', 'listGroup'].forEach(id => $(id).addEventListener('input', refresh));
+
+  $('saveBtn').addEventListener('click', async () => {
+    const text = $('text').value;
+    const name = $('listName').value.trim();
+    const roundSize = savedSize; // 每轮题数已改成孩子的设置，这里只保留单词表原来的值
+    const { words, problems } = WordLib.analyze(text);
+    if (!name) return message('saveMsg', '请填写单词表名称。', false);
+    if (!words.length) return message('saveMsg', '单词表里没有可用的单词。', false);
+    const errors = problems.filter(p => p.level === 'error').length;
+    if (errors && !confirm('有 ' + errors + ' 行格式不对，保存后这些行会被跳过。仍然保存吗？')) return;
+    $('saveBtn').disabled = true;
+    message('saveMsg', '正在保存…', true);
+    try {
+      const group = $('listGroup').value.trim();
+      const d = await admin('saveList', { list: { id: currentListId || undefined, name, roundSize, group }, text });
+      cfg = d.config;
+      currentListId = d.id;
+      savedText = text; savedName = name; savedSize = roundSize; savedGroup = group;
+      $('deleteListBtn').hidden = false;
+      renderListNav();
+      refresh();
+      const l = cfg.lists.find(x => x.id === currentListId);
+      message('saveMsg', '✓ 已保存 ' + words.length + ' 个单词。练习页重新选择这个单词表即可看到。' + (l ? '\n' + hiddenNote([groupKey(l)]) : '').trimEnd(), true);
+    } catch (e) {
+      message('saveMsg', '保存失败：' + e.message, false);
+      refresh();
+    }
+  });
+
+  $('undoBtn').addEventListener('click', () => {
+    if (!listDirty()) return;
+    if (!confirm('放弃所有未保存的修改？')) return;
+    $('text').value = savedText;
+    $('listName').value = savedName;
+    $('listGroup').value = savedGroup;
+    refresh();
+    message('saveMsg', '', true);
+  });
+
+  $('deleteListBtn').addEventListener('click', async () => {
+    const l = cfg.lists.find(x => x.id === currentListId);
+    if (!l) return;
+    if (cfg.lists.length <= 1) return message('saveMsg', '至少要保留一个单词表。', false);
+    if (!confirm('确定删除单词表“' + l.name + '”吗？删除后无法恢复（已有的学习记录会保留）。')) return;
+    try {
+      cfg = (await admin('deleteList', { id: l.id })).config;
+      savedText = $('text').value; // 避免切换时提示未保存
+      await openList(cfg.lists[0].id);
+      message('saveMsg', '✓ 已删除“' + l.name + '”。', true);
+    } catch (e) {
+      message('saveMsg', '删除失败：' + e.message, false);
+    }
+  });
+
+  // ---------- 批量导入 ----------
+  $('appendBtn').addEventListener('click', () => {
+    const pasted = $('paste').value;
+    const incoming = WordLib.analyze(pasted);
+    if (!incoming.words.length) return message('pasteMsg', '没有识别到单词，请检查格式。', false);
+    const existing = new Set(WordLib.parse($('text').value).map(w => w.en));
+    const lines = [];
+    let skipped = 0;
+    pasted.split(/\r?\n/).forEach(raw => {
+      const w = WordLib.parseLine(raw);
+      if (!w || w.error) return;
+      if (existing.has(w.en)) { skipped++; return; }
+      existing.add(w.en);
+      lines.push(raw.trim());
+    });
+    if (lines.length) {
+      const cur = $('text').value.replace(/\s+$/, '');
+      $('text').value = (cur ? cur + '\n' : '') + lines.join('\n') + '\n';
+      refresh();
+      $('paste').value = '';
+    }
+    const bad = incoming.problems.filter(p => p.level === 'error').length;
+    message('pasteMsg', '新增 ' + lines.length + ' 个' + (skipped ? '，跳过重复 ' + skipped + ' 个' : '')
+      + (bad ? '，' + bad + ' 行格式不对未导入' : '') + '。记得点“保存”。', lines.length > 0);
+  });
+
+  $('replaceBtn').addEventListener('click', () => {
+    const pasted = $('paste').value;
+    const n = WordLib.parse(pasted).length;
+    if (!n) return message('pasteMsg', '没有识别到单词，请检查格式。', false);
+    if (!confirm('用粘贴的 ' + n + ' 个单词替换当前单词表？（保存前仍可撤销）')) return;
+    $('text').value = pasted.trim() + '\n';
+    $('paste').value = '';
+    refresh();
+    message('pasteMsg', '已替换为 ' + n + ' 个单词。记得点“保存”。', true);
+  });
+
+  // ---------- 按 ## 标题批量创建 ----------
+  function splitSections(text) {
+    const secs = [];
+    let cur = null;
+    text.split(/\r?\n/).forEach(line => {
+      const m = line.match(/^\s*##\s*(.+?)\s*$/);
+      if (m) { cur = { name: m[1].slice(0, 30), lines: [] }; secs.push(cur); }
+      else if (cur) cur.lines.push(line);
+    });
+    return secs.map(s => ({ name: s.name, text: s.lines.join('\n').trim() + '\n' }));
+  }
+
+  $('bulkBtn').addEventListener('click', async () => {
+    const secs = splitSections($('paste').value);
+    if (!secs.length) return message('pasteMsg', '没有找到 ## 开头的单词表标题。', false);
+    const empty = secs.filter(x => !WordLib.parse(x.text).length).map(x => x.name);
+    if (empty.length) return message('pasteMsg', '这些单词表里没有可用的单词：' + empty.join('、'), false);
+    const exists = secs.filter(x => cfg.lists.some(l => l.name === x.name)).map(x => x.name);
+    const summary = secs.map(x => x.name + '（' + WordLib.parse(x.text).length + ' 词）').join('\n');
+    if (!confirm('将创建 ' + secs.length + ' 个单词表：\n' + summary
+      + (exists.length ? '\n\n其中这些已存在，会被覆盖：' + exists.join('、') : ''))) return;
+    if (listDirty() && !confirm('当前单词表有未保存的修改，继续会丢失这些修改。确定吗？')) return;
+    if (await createLists(secs, $('bulkBtn'))) $('paste').value = '';
+  });
+
+  // 依次创建（同名的覆盖），结果显示在 pasteMsg；全部成功返回 true
+  async function createLists(secs, btn) {
+    btn.disabled = true;
+    let done = 0, ok = false;
+    try {
+      for (const x of secs) {
+        message('pasteMsg', '正在创建（' + (done + 1) + '/' + secs.length + '）：' + x.name, true);
+        const old = cfg.lists.find(l => l.name === x.name);
+        const d = await admin('saveList', { list: { id: old && old.id, name: x.name, roundSize: old ? old.roundSize : 20 }, text: x.text });
+        cfg = d.config;
+        done++;
+      }
+      ok = true;
+      const made = secs.map(x => cfg.lists.find(l => l.name === x.name)).filter(Boolean);
+      message('pasteMsg', ('✓ 已创建 ' + done + ' 个单词表。\n' + hiddenNote(made.map(groupKey))).trimEnd(), true);
+    } catch (e) {
+      message('pasteMsg', '已完成 ' + done + ' 个，“' + secs[done].name + '”失败：' + e.message, false);
+    } finally {
+      btn.disabled = false;
+      const first = cfg.lists.find(l => l.name === secs[0].name);
+      savedText = $('text').value; savedName = $('listName').value.trim(); savedGroup = $('listGroup').value.trim(); // 已确认放弃
+      if (first) await openList(first.id); else renderListNav();
+    }
+    return ok;
+  }
+
+  // ---------- 选择文件导入（可多选；先预览，确认后创建） ----------
+  let fileSecs = [];
+  const show = (id, on) => { $(id).hidden = !on; };
+  // 先按 UTF-8 读取，不是合法 UTF-8 时按 GB18030（Windows 记事本常见的中文编码）读取
+  async function readText(file) {
+    const buf = await file.arrayBuffer();
+    try { return new TextDecoder('utf-8', { fatal: true }).decode(buf); }
+    catch (e) { return new TextDecoder('gb18030').decode(buf); }
+  }
+  $('fileBtn').addEventListener('click', () => { $('fileInput').value = ''; $('fileInput').click(); });
+  $('fileInput').addEventListener('change', async () => {
+    const files = [...$('fileInput').files];
+    if (!files.length) return;
+    fileSecs = [];
+    for (const f of files) {
+      const text = (await readText(f)).replace(/^\uFEFF/, '');
+      const secs = splitSections(text);
+      if (secs.length) secs.forEach(x => fileSecs.push(Object.assign(x, { file: f.name })));
+      else fileSecs.push({ name: f.name.replace(/\.[^.]*$/, '').trim().slice(0, 30), text: text.trim() + '\n', file: f.name });
+    }
+    renderFilePrev();
+    message('pasteMsg', '', true);
+  });
+  function renderFilePrev() {
+    const rows = fileSecs.map((x, i) => {
+      const a = WordLib.analyze(x.text);
+      x.count = a.words.length;
+      const errs = a.problems.filter(p => p.level === 'error').length, warns = a.problems.length - errs;
+      const name = x.name.trim();
+      const dup = fileSecs.findIndex(y => y.name.trim() === name) !== i;
+      let st;
+      if (!name) st = '<span class="st-bad">请填写名称</span>';
+      else if (!x.count) st = '<span class="st-bad">没有可用的单词，不会导入</span>';
+      else if (dup) st = '<span class="st-bad">和上面重名，请改名</span>';
+      else if (cfg.lists.some(l => l.name === name)) st = '<span class="st-over">已有同名单词表，会被覆盖</span>';
+      else st = '<span class="st-new">新建</span>';
+      const probs = (errs ? errs + ' 行格式不对（会跳过）' : '') + (errs && warns ? '，' : '') + (warns ? warns + ' 个提醒' : '');
+      return '<tr><td><input class="fname" data-i="' + i + '" maxlength="30" value="' + esc(x.name) + '"></td>'
+        + '<td class="num">' + x.count + ' 词</td><td>' + st + (probs ? '<br><small>' + probs + '</small>' : '') + '</td>'
+        + '<td><small style="color: var(--muted)">' + esc(x.file) + '</small></td></tr>';
+    });
+    $('fileTable').innerHTML = '<tr><th>单词表名称（可以改）</th><th class="num">单词数</th><th>状态</th><th>文件</th></tr>' + rows.join('');
+    $('fileTable').querySelectorAll('input.fname').forEach(inp => inp.addEventListener('change', () => {
+      fileSecs[+inp.dataset.i].name = inp.value;
+      renderFilePrev();
+    }));
+    const usable = fileSecs.filter(x => x.count && x.name.trim());
+    const bad = fileSecs.some((x, i) => x.count && (!x.name.trim() || fileSecs.findIndex(y => y.name.trim() === x.name.trim()) !== i));
+    $('fileOkBtn').disabled = !usable.length || bad;
+    $('fileOkBtn').textContent = '✓ 确定导入 ' + usable.length + ' 个单词表';
+    show('filePrev', true);
+  }
+  $('fileCancelBtn').addEventListener('click', () => { fileSecs = []; show('filePrev', false); });
+  $('fileOkBtn').addEventListener('click', async () => {
+    const secs = fileSecs.filter(x => x.count && x.name.trim()).map(x => ({ name: x.name.trim(), text: x.text }));
+    if (!secs.length) return;
+    if (listDirty() && !confirm('当前单词表有未保存的修改，继续会丢失这些修改。确定吗？')) return;
+    if (await createLists(secs, $('fileOkBtn'))) { fileSecs = []; show('filePrev', false); }
+  });
+
+  // =========================================================
+  // 孩子
+  // =========================================================
+  let kidsSaved = '';
+  function kidRow(k) {
+    const row = document.createElement('div');
+    row.className = 'kid-row';
+    row.dataset.id = k.id || '';
+    row.innerHTML = '<input type="text" class="name" maxlength="12" placeholder="名字">'
+      + '<input type="text" class="pin" maxlength="4" inputmode="numeric" placeholder="0000">'
+      + '<input type="number" class="goal" min="1" max="500" placeholder="20">'
+      + '<input type="number" class="tries" min="1" max="10" placeholder="6">'
+      + '<input type="number" class="round" min="1" max="100" placeholder="20">'
+      + '<button class="btn danger small">删除</button>';
+    row.querySelector('.name').value = k.name || '';
+    row.querySelector('.pin').value = k.pin || '';
+    row.querySelector('.goal').value = k.goal || 20;
+    row.querySelector('.tries').value = k.tries || 6;
+    row.querySelector('.round').value = k.round || 20;
+    // 能用的单词表组：全部（包括以后新增的）或指定几个组
+    const lb = document.createElement('div');
+    lb.className = 'kid-lists';
+    const rid = 'm' + Math.random().toString(36).slice(2, 8);
+    const count = g => cfg.lists.filter(l => groupKey(l) === g).length;
+    lb.innerHTML = '<div class="mode">可以练习：'
+      + '<label><input type="radio" name="' + rid + '" value="all"> 全部单词表（包括以后新增的）</label>'
+      + '<label><input type="radio" name="' + rid + '" value="some"> 指定分组</label></div>'
+      + '<div class="picks"><div class="grp">' + allGroups().map(g => '<label><input type="checkbox" value="' + esc(g) + '"> ' + esc(g)
+        + ' <small style="color: var(--muted)">（' + count(g) + ' 个表）</small></label>').join('') + '</div></div>';
+    const some = Array.isArray(k.groups);
+    lb.querySelector('input[value="' + (some ? 'some' : 'all') + '"]').checked = true;
+    lb.querySelectorAll('.picks input').forEach(c => { c.checked = some && k.groups.includes(c.value); });
+    const syncPicks = () => { lb.querySelector('.picks').hidden = !lb.querySelector('input[value="some"]').checked; };
+    lb.querySelectorAll('input[type=radio]').forEach(r => r.addEventListener('change', syncPicks));
+    syncPicks();
+    row.appendChild(lb);
+    row.querySelector('button').addEventListener('click', () => {
+      if ($('kidRows').children.length <= 1) return message('kidMsg', '至少要有一个孩子。', false);
+      row.remove();
+      checkKids();
+    });
+    row.querySelectorAll('input').forEach(i => i.addEventListener('input', checkKids));
+    const until = k.id && cfg.pinLocks && cfg.pinLocks[k.id];
+    if (until && until > Date.now()) {
+      const tip = document.createElement('div');
+      tip.className = 'kid-lock';
+      tip.textContent = '🔒 PIN 连续输错被锁定，约 ' + Math.ceil((until - Date.now()) / 60000) + ' 分钟后自动解锁；修改 PIN 并保存可以立即解锁';
+      row.appendChild(tip);
+    }
+    return row;
+  }
+  function readKids() {
+    return [...$('kidRows').children].map(r => ({
+      id: r.dataset.id || undefined,
+      name: r.querySelector('.name').value.trim(),
+      pin: r.querySelector('.pin').value.trim(),
+      goal: r.querySelector('.goal').value.trim() === '' ? 20 : Number(r.querySelector('.goal').value), // 留空按默认 20
+      tries: r.querySelector('.tries').value.trim() === '' ? 6 : Number(r.querySelector('.tries').value), // 留空按默认 6
+      round: r.querySelector('.round').value.trim() === '' ? 20 : Number(r.querySelector('.round').value), // 留空按默认 20
+      groups: r.querySelector('.kid-lists input[value="some"]').checked // null 表示全部单词表
+        ? [...r.querySelectorAll('.kid-lists .picks input:checked')].map(c => c.value) : null,
+    }));
+  }
+  const kidsDirty = () => cfg && JSON.stringify(readKids()) !== kidsSaved;
+  function renderKids() {
+    const box = $('kidRows');
+    box.innerHTML = '';
+    cfg.children.forEach(k => box.appendChild(kidRow(k)));
+    kidsSaved = JSON.stringify(readKids());
+    message('kidMsg', '', true);
+    checkKids();
+  }
+  function checkKids() {
+    const weak = readKids().filter(k => k.pin === '0000').map(k => k.name || '（未命名）');
+    $('kidWarn').textContent = weak.length ? '⚠️ ' + weak.join('、') + ' 还在用默认 PIN 0000，建议修改。' : '';
+  }
+  $('addKidBtn').addEventListener('click', () => {
+    const row = kidRow({ name: '', pin: '', groups: null });
+    $('kidRows').appendChild(row);
+    row.querySelector('.name').focus();
+  });
+  $('saveKidsBtn').addEventListener('click', async () => {
+    const kids = readKids();
+    for (const k of kids) {
+      if (!k.name) return message('kidMsg', '有孩子的名字没填。', false);
+      if (!/^\d{4}$/.test(k.pin)) return message('kidMsg', k.name + ' 的 PIN 必须是 4 位数字。', false);
+      if (!(Number.isInteger(k.goal) && k.goal >= 1 && k.goal <= 500)) return message('kidMsg', k.name + ' 的每日目标需要在 1–500 之间。', false);
+      if (!(Number.isInteger(k.tries) && k.tries >= 1 && k.tries <= 10)) return message('kidMsg', k.name + ' 的最多尝试次数需要在 1–10 之间。', false);
+      if (!(Number.isInteger(k.round) && k.round >= 1 && k.round <= 100)) return message('kidMsg', k.name + ' 的每轮题数需要在 1–100 之间。', false);
+      if (k.groups && !k.groups.length) return message('kidMsg', k.name + ' 选了“指定分组”，请至少勾选一个分组。', false);
+    }
+    const removed = cfg.children.filter(c => !kids.some(k => k.id === c.id));
+    if (removed.length && !confirm('将删除：' + removed.map(c => c.name).join('、') + '\n他们的学习记录也会一起删除，且无法恢复。确定吗？')) return;
+    $('saveKidsBtn').disabled = true;
+    try {
+      cfg = (await admin('saveChildren', { children: kids })).config;
+      renderKids();
+      message('kidMsg', '✓ 已保存。改过 PIN 的孩子，下次在练习页需要重新输入。', true);
+    } catch (e) {
+      message('kidMsg', '保存失败：' + e.message, false);
+    } finally {
+      $('saveKidsBtn').disabled = false;
+    }
+  });
+
+  // =========================================================
+  // 学习记录
+  // =========================================================
+  let nextCursor = null;
+  const listWordCache = {};
+
+  function fillFilters() {
+    const fc = $('fChild'), fl = $('fList');
+    const cv = fc.value, lv = fl.value;
+    fc.innerHTML = cfg.children.map(c => '<option value="' + c.id + '">' + esc(c.name) + '</option>').join('');
+    fl.innerHTML = '<option value="">全部</option>' + cfg.lists.map(l => '<option value="' + l.id + '">' + esc(l.name) + '</option>').join('')
+      + '<option value="x_review">📅 今日复习</option><option value="x_wrong">📕 错词本</option>';
+    if (cfg.children.some(c => c.id === cv)) fc.value = cv;
+    if (cfg.lists.some(l => l.id === lv) || /^x_/.test(lv)) fl.value = lv;
+  }
+
+  function openRecords() {
+    fillFilters();
+    loadReport();
+    loadRecords(true);
+    loadRank();
+  }
+
+  // ---------- 学习报表（按孩子统计，不受单词表筛选影响）----------
+  let reportDays = 7;
+  document.querySelectorAll('#rangeSeg button').forEach(b => b.addEventListener('click', () => {
+    reportDays = Number(b.dataset.days);
+    document.querySelectorAll('#rangeSeg button').forEach(x => x.classList.toggle('on', x === b));
+    loadReport();
+  }));
+  const pct = (c, n) => (n ? Math.round(c / n * 100) + '%' : '—');
+  const tile = (k, v, unit) => '<div class="tile"><div class="k">' + k + '</div><div class="v">' + v + (unit ? '<small>' + unit + '</small>' : '') + '</div></div>';
+  const fmtMin = sec => { const m = Math.floor(sec / 60); return m >= 60 ? Math.floor(m / 60) + ' 小时 ' + (m % 60) + ' 分' : m + ' 分 ' + (sec % 60) + ' 秒'; };
+
+  async function loadReport() {
+    const child = $('fChild').value;
+    if (!child) return;
+    message('repMsg', '', true);
+    $('repTip').textContent = '加载中…';
+    try {
+      const r = await admin('report', { child, days: reportDays });
+      const t = r.totals;
+      $('repTiles').innerHTML = tile('练习轮数', t.rounds, '轮') + tile('总用时', Math.round(t.sec / 60), '分钟')
+        + tile('答题数', t.answered, '个') + tile('正确率', pct(t.correct, t.answered));
+      renderDayChart(r.days);
+      const lists = r.lists.filter(l => l.answered).sort((a, b) => a.correct / a.answered - b.correct / b.answered);
+      $('repLists').innerHTML = lists.length
+        ? '<tr><th>单词表</th><th class="num">答题数</th><th>正确率</th></tr>' + lists.map(l => '<tr><td>' + esc(l.name) + '</td><td class="num">' + l.answered
+          + '</td><td><span class="rate" style="width:' + Math.max(3, Math.round(l.correct / l.answered * 90)) + 'px"></span>' + pct(l.correct, l.answered) + '</td></tr>').join('')
+        : '<tr><td class="empty">这段时间还没有练习。</td></tr>';
+      $('repReview').innerHTML = tile('已掌握', r.review.mastered, '个') + tile('复习中', r.review.learning, '个') + tile('今日待复习', r.review.due, '个')
+        + tile('打卡天数', r.checkin.days + ' / ' + r.days.length, '天') + tile('连续打卡', r.checkin.streak, '天') + tile('最长连续', r.checkin.best, '天');
+    } catch (e) {
+      $('repTip').textContent = '';
+      message('repMsg', '读取报表失败：' + e.message, false);
+    }
+  }
+
+  function renderDayChart(days) {
+    const chart = $('repChart'), xl = $('repX'), tip = $('repTip');
+    const maxMin = Math.max(...days.map(d => d.sec / 60), 0);
+    const top = maxMin <= 10 ? 10 : Math.ceil(maxMin / 10) * 10; // 纵轴上限取整到 10 分钟
+    chart.innerHTML = [top, top / 2].map(v => '<div class="grid" style="bottom:' + (v / top * 100) + '%"><span>' + v + '</span></div>').join('');
+    xl.innerHTML = '';
+    const step = days.length > 10 ? 5 : 1;
+    const md = d => Number(d.slice(5, 7)) + '/' + Number(d.slice(8));
+    const describe = d => md(d.date) + '：' + (d.rounds
+      ? '练习 ' + d.rounds + ' 轮，用时 ' + fmtMin(d.sec) + '，答题 ' + d.answered + ' 个，正确率 ' + pct(d.correct, d.answered)
+      : '没有练习');
+    const idle = '把鼠标移到柱子上（或点一下），可以看当天的详情';
+    days.forEach((d, i) => {
+      const col = document.createElement('div');
+      col.className = 'col';
+      col.title = describe(d);
+      col.innerHTML = '<div class="bar" style="height:' + (d.sec / 60 / top * 100) + '%"></div>';
+      const showTip = () => {
+        chart.querySelectorAll('.col.on').forEach(c => c.classList.remove('on'));
+        col.classList.add('on');
+        tip.textContent = describe(d);
+        tip.classList.remove('muted');
+      };
+      col.addEventListener('mouseenter', showTip);
+      col.addEventListener('click', showTip);
+      chart.appendChild(col);
+      const lab = document.createElement('span');
+      lab.textContent = (i % step === 0 || i === days.length - 1) ? md(d.date) : '';
+      xl.appendChild(lab);
+    });
+    chart.onmouseleave = () => {
+      chart.querySelectorAll('.col.on').forEach(c => c.classList.remove('on'));
+      tip.textContent = idle;
+      tip.classList.add('muted');
+    };
+    tip.textContent = idle;
+    tip.classList.add('muted');
+  }
+
+  $('fChild').addEventListener('change', () => { loadReport(); loadRecords(true); loadRank(); });
+  $('fList').addEventListener('change', () => { loadRecords(true); loadRank(); });
+  $('refreshBtn').addEventListener('click', () => { loadReport(); loadRecords(true); loadRank(); });
+  $('moreBtn').addEventListener('click', () => loadRecords(false));
+
+  const fmtTime = iso => {
+    const d = new Date(iso);
+    if (isNaN(d)) return '';
+    const p = n => String(n).padStart(2, '0');
+    return (d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+  };
+  const fmtDur = sec => { const m = Math.floor(sec / 60), s = sec % 60; return m ? m + '分' + s + '秒' : s + '秒'; };
+
+  async function loadRecords(reset) {
+    const table = $('recTable');
+    if (reset) { nextCursor = null; table.innerHTML = '<tr><td class="empty">加载中…</td></tr>'; }
+    message('recMsg', '', true);
+    try {
+      const d = await admin('records', { child: $('fChild').value, list: $('fList').value || undefined, before: nextCursor || undefined, limit: 30 });
+      if (reset) {
+        table.innerHTML = '<tr><th>时间</th><th>单词表</th><th>状态</th><th class="num">用时</th><th class="num">对</th><th class="num">错</th><th>错词 / 跳过</th></tr>';
+      }
+      if (reset && !d.records.length) table.innerHTML = '<tr><td class="empty">还没有答题记录。</td></tr>';
+      d.records.forEach(r => {
+        const tr = document.createElement('tr');
+        const ww = Object.entries(r.wrongWords || {}).map(([w, n]) => '<span class="ww">' + esc(w) + (n > 1 ? '×' + n : '') + '</span>').join('');
+        const sk = (r.skipped || []).length ? '<span class="sk">跳过：' + r.skipped.map(esc).join('、') + '</span>' : '';
+        tr.innerHTML = '<td>' + fmtTime(r.start) + '</td><td>' + esc(r.listName) + '</td>'
+          + '<td>' + (r.status === 'complete' ? '<span class="tag done">完成</span>' : '<span class="tag part">未完成</span>') + '</td>'
+          + '<td class="num">' + fmtDur(r.durationSec || 0) + '</td><td class="num">' + r.correct + '</td><td class="num">' + r.wrong + '</td>'
+          + '<td>' + (ww || '') + (ww && sk ? '<br>' : '') + sk + '</td>';
+        table.appendChild(tr);
+      });
+      nextCursor = d.next;
+      $('moreBtn').hidden = !d.next;
+    } catch (e) {
+      if (reset) table.innerHTML = '';
+      message('recMsg', '读取记录失败：' + e.message, false);
+    }
+  }
+
+  async function loadRank() {
+    const table = $('rankTable');
+    table.innerHTML = '<tr><td class="empty">加载中…</td></tr>';
+    try {
+      const listId = $('fList').value;
+      const [st, words] = await Promise.all([
+        admin('stats', { child: $('fChild').value }),
+        listId && !/^x_/.test(listId) ? (listWordCache[listId] || getList(listId).then(d => (listWordCache[listId] = new Set(WordLib.parse(d.text || '').map(w => w.en))))) : null,
+      ]);
+      let rows = Object.entries(st.words || {}).filter(([en, w]) => w.wrong > 0 && (!words || words.has(en)));
+      rows.sort((a, b) => b[1].wrong - a[1].wrong || b[1].score - a[1].score);
+      rows = rows.slice(0, 50);
+      if (!rows.length) { table.innerHTML = '<tr><td class="empty">还没有答错过的单词。</td></tr>'; return; }
+      const max = rows[0][1].wrong;
+      table.innerHTML = '<tr><th>单词</th><th class="num">答错</th><th class="num">答对</th><th class="num">熟练度</th><th>最近答错</th></tr>'
+        + rows.map(([en, w]) => '<tr><td>' + esc(en) + '</td>'
+          + '<td class="num"><span class="bar" style="width:' + Math.max(4, Math.round(w.wrong / max * 60)) + 'px"></span>' + w.wrong + '</td>'
+          + '<td class="num">' + w.right + '</td><td class="num">' + w.score + '</td><td>' + (w.lastWrong ? fmtTime(w.lastWrong) : '') + '</td></tr>').join('');
+    } catch (e) {
+      table.innerHTML = '';
+      message('recMsg', '读取错词失败：' + e.message, false);
+    }
+  }
+
+  $('clearBtn').addEventListener('click', async () => {
+    const c = cfg.children.find(x => x.id === $('fChild').value);
+    if (!c) return;
+    if (!confirm('确定清空 ' + c.name + ' 的全部学习记录和错词统计吗？无法恢复。')) return;
+    try {
+      const d = await admin('clearRecords', { child: c.id });
+      message('recMsg', '✓ 已清空 ' + d.deleted + ' 条记录。', true);
+      loadRecords(true);
+      loadRank();
+    } catch (e) {
+      message('recMsg', '清空失败：' + e.message, false);
+    }
+  });
+
+  window.addEventListener('beforeunload', e => {
+    if ($('main').hidden) return;
+    if (listDirty() || kidsDirty()) { e.preventDefault(); e.returnValue = ''; }
+  });
+
+  // =========================================================
+  // 设置：导出与合并导入
+  // =========================================================
+  const RECORD_ID_RE = /^(\d{8}T\d{6})_([a-z0-9_]+)_([a-z0-9]{4,10})$/;
+  const stamp = () => {
+    const d = new Date(), p = n => String(n).padStart(2, '0');
+    return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes());
+  };
+  function download(name, text, type) {
+    const url = URL.createObjectURL(new Blob([text], { type }));
+    const a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }
+
+  $('exportListsBtn').addEventListener('click', async () => {
+    message('exportMsg', '正在导出…', true);
+    try {
+      const base = await admin('exportBase');
+      const text = '# 单词拼写练习 · 单词表导出（' + new Date().toLocaleString() + '）\n'
+        + '# 可以在管理页用“按 ## 标题批量创建单词表”导回去\n\n'
+        + base.config.lists.map(l => '## ' + l.name + '\n' + (base.wordlists[l.id] || '').trim() + '\n').join('\n');
+      download('单词表-' + stamp() + '.txt', text, 'text/plain;charset=utf-8');
+      message('exportMsg', '✓ 已导出 ' + base.config.lists.length + ' 个单词表。', true);
+    } catch (e) {
+      message('exportMsg', '导出失败：' + e.message, false);
+    }
+  });
+
+  $('exportAllBtn').addEventListener('click', async () => {
+    const btn = $('exportAllBtn');
+    btn.disabled = true;
+    message('exportMsg', '正在读取单词表和孩子…', true);
+    try {
+      const base = await admin('exportBase');
+      const records = {};
+      let total = 0;
+      for (const c of base.config.children) {
+        records[c.id] = [];
+        for (let offset = 0; ; offset += 300) {
+          message('exportMsg', '正在读取 ' + c.name + ' 的答题记录（已读取 ' + (total + records[c.id].length) + ' 条）…', true);
+          const d = await admin('exportRecords', { child: c.id, offset, limit: 300 });
+          records[c.id].push(...d.records);
+          if (d.done) break;
+        }
+        total += records[c.id].length;
+      }
+      const backup = { app: 'spelling-practice', version: 1, exportedAt: new Date().toISOString(),
+        config: base.config, wordlists: base.wordlists, stats: base.stats, records };
+      download('单词拼写备份-' + stamp() + '.json', JSON.stringify(backup), 'application/json');
+      message('exportMsg', '✓ 已导出完整备份：' + base.config.lists.length + ' 个单词表、' + base.config.children.length + ' 个孩子、' + total + ' 条答题记录。', true);
+    } catch (e) {
+      message('exportMsg', '导出失败：' + e.message, false);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  let importData = null;
+  $('importFile').addEventListener('change', e => {
+    const f = e.target.files[0];
+    importData = null;
+    $('importPreview').hidden = true;
+    message('importMsg', '', true);
+    if (!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+      try {
+        const d = JSON.parse(String(r.result));
+        if (!d || d.app !== 'spelling-practice' || !d.config || !Array.isArray(d.config.lists) || !Array.isArray(d.config.children)) throw new Error('不是单词拼写练习的备份文件');
+        importData = d;
+        const recCount = Object.values(d.records || {}).reduce((n, a) => n + (Array.isArray(a) ? a.length : 0), 0);
+        $('importInfo').innerHTML = '备份时间：' + esc(new Date(d.exportedAt).toLocaleString()) + '<br>'
+          + '单词表：' + d.config.lists.map(l => esc(l.name)).join('、') + '<br>'
+          + '孩子：' + d.config.children.map(c => esc(c.name)).join('、');
+        $('impListsLabel').textContent = '单词表（' + d.config.lists.length + ' 个）';
+        $('impKidsLabel').textContent = '孩子和 PIN（' + d.config.children.length + ' 个）';
+        $('impRecordsLabel').textContent = '答题记录和熟练度（' + recCount + ' 条记录）';
+        $('importPreview').hidden = false;
+      } catch (err) {
+        message('importMsg', '无法读取这个文件：' + err.message, false);
+      }
+    };
+    r.readAsText(f, 'utf-8');
+  });
+
+  $('importBtn').addEventListener('click', async () => {
+    const d = importData;
+    if (!d) return;
+    const opt = { lists: $('impLists').checked, kids: $('impKids').checked, records: $('impRecords').checked };
+    if (!opt.lists && !opt.kids && !opt.records) return message('importMsg', '请至少勾选一项。', false);
+    const parts = [opt.lists && '单词表', opt.kids && '孩子和 PIN', opt.records && '答题记录和熟练度'].filter(Boolean).join('、');
+    if (!confirm('将把备份中的「' + parts + '」合并到现有数据中。\n同名的单词表和孩子会被更新为备份里的版本，现有数据不会被删除。\n确定开始吗？')) return;
+    if (listDirty() && !confirm('单词表页面有未保存的修改，导入后会被刷新。继续吗？')) return;
+    const btn = $('importBtn');
+    btn.disabled = true;
+    try {
+      // 第 1 步：单词表和孩子（同时得到备份编号 → 现有编号的对应关系）
+      message('importMsg', '正在导入单词表和孩子…', true);
+      const r1 = await admin('importConfig', {
+        lists: d.config.lists.map(l => ({ id: l.id, name: l.name, roundSize: l.roundSize, group: l.group, text: (d.wordlists || {})[l.id] || '', apply: opt.lists })),
+        children: d.config.children.map(c => ({ id: c.id, name: c.name, pin: c.pin, goal: c.goal, tries: c.tries, round: c.round, groups: c.groups, apply: opt.kids })),
+      });
+      cfg = r1.config;
+      const lines = [];
+      const sm = r1.summary;
+      if (opt.lists) lines.push('单词表：新增 ' + sm.listsAdded + ' 个，更新 ' + sm.listsUpdated + ' 个');
+      if (opt.kids) lines.push('孩子：新增 ' + sm.childrenAdded + ' 个，更新 ' + sm.childrenUpdated + ' 个');
+
+      // 第 2、3 步：答题记录（分批）和熟练度
+      if (opt.records) {
+        let added = 0, dup = 0, noChild = 0;
+        const mapId = id => {
+          const m = RECORD_ID_RE.exec(id || '');
+          return m ? m[1] + '_' + (r1.listMap[m[2]] || m[2]) + '_' + m[3] : id;
+        };
+        for (const c of d.config.children) {
+          const target = r1.childMap[c.id];
+          const recs = ((d.records || {})[c.id] || []).map(r => Object.assign({}, r, { id: mapId(r.id) }));
+          if (!target) { noChild += recs.length; continue; }
+          for (let i = 0; i < recs.length; i += 100) {
+            message('importMsg', '正在导入 ' + c.name + ' 的答题记录（' + Math.min(i + 100, recs.length) + ' / ' + recs.length + '）…', true);
+            const r2 = await admin('importRecords', { child: target, records: recs.slice(i, i + 100) });
+            added += r2.added; dup += r2.skipped;
+          }
+          const st = (d.stats || {})[c.id];
+          if (st && st.words) await admin('importStats', { child: target, words: st.words });
+        }
+        lines.push('答题记录：新增 ' + added + ' 条' + (dup ? '，已存在或无效 ' + dup + ' 条' : '')
+          + (noChild ? '，' + noChild + ' 条因为找不到对应的孩子而跳过（可以同时勾选“孩子和 PIN”）' : ''));
+      }
+      if (sm.skipped.length) lines.push('跳过：' + sm.skipped.join('；'));
+      message('importMsg', '✓ 合并导入完成。' + lines.join('。') + '。', true);
+      $('importFile').value = '';
+      $('importPreview').hidden = true;
+      importData = null;
+      // 刷新其他标签页的数据
+      savedText = $('text').value; savedName = $('listName').value.trim(); savedGroup = $('listGroup').value.trim();
+      renderKids();
+      await openList(cfg.lists.some(l => l.id === currentListId) ? currentListId : cfg.lists[0].id);
+    } catch (e) {
+      message('importMsg', '导入失败：' + e.message + '（已完成的部分会保留，可以修正后重新导入，不会产生重复）', false);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  $('pwBtn').addEventListener('click', async () => {
+    const oldPw = $('pwOld').value, pw1 = $('pwNew').value, pw2 = $('pwNew2').value;
+    if (!oldPw) return message('pwMsg', '请输入旧密码。', false);
+    if (pw1.length < 4 || pw1.length > 64) return message('pwMsg', '新密码需要 4–64 个字符。', false);
+    if (pw1 !== pw2) return message('pwMsg', '两次输入的新密码不一样。', false);
+    if (pw1 === oldPw) return message('pwMsg', '新密码和旧密码一样。', false);
+    $('pwBtn').disabled = true;
+    try {
+      await adminAs(oldPw, 'changePassword', { newPassword: pw1 });
+      password = pw1;
+      ['pwOld', 'pwNew', 'pwNew2'].forEach(id => { $(id).value = ''; });
+      message('pwMsg', '✓ 密码已修改。下次登录请使用新密码。', true);
+    } catch (e) {
+      message('pwMsg', (e.status === 401 ? '旧密码不对：' : '修改失败：') + e.message, false);
+    } finally {
+      $('pwBtn').disabled = false;
+    }
+  });
+
+  // 密码框获得焦点时才可以输入（避免浏览器自动填入保存过的密码）
+  const pwdBox = $('pwd');
+  const editable = () => { pwdBox.readOnly = false; };
+  pwdBox.addEventListener('focus', editable);
+  pwdBox.addEventListener('pointerdown', editable);
+  if (matchMedia('(hover: hover)').matches) { editable(); pwdBox.focus(); } // 电脑上直接把光标放进去；iPad 上不弹键盘
+
+  // 从练习页按“返回”回到这里时，浏览器可能直接恢复已登录的旧页面，这时也重新载入
+  window.addEventListener('pageshow', e => { if (e.persisted) location.reload(); });
+})();
+</script>
+</body>
+</html>
