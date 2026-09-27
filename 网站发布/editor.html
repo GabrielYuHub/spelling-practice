@@ -31,6 +31,7 @@
   header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
   h1 { margin: 0; color: var(--blue); font-size: 30px; }
   a.back { color: var(--blue); text-decoration: none; font-size: 16px; }
+  .head-links { display: flex; gap: 18px; align-items: center; }
   .card { background: var(--card); border-radius: 16px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,.06); margin-bottom: 16px; }
   .card h2 { margin: 0 0 6px; font-size: 19px; color: var(--blue); }
   .hint { color: var(--muted); font-size: 14px; margin: 0 0 12px; line-height: 1.6; }
@@ -49,9 +50,11 @@
   .file-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 10px; }
   .file-prev { margin-top: 12px; border: 2px solid #c5e1a5; border-radius: 12px; padding: 10px 12px; background: #f7fbf2; }
   .file-prev h3 { margin: 0 0 8px; font-size: 16px; }
-  .file-prev table td { padding: 5px 4px; vertical-align: middle; }
-  .file-prev input.fname { width: 100%; min-width: 120px; padding: 6px 8px; }
+  .file-prev input.fname { width: 100%; padding: 6px 8px; }
   .file-prev .st-new { color: var(--green); }
+  .file-prev .fsrc { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; overflow-wrap: anywhere; }
+  .file-prev .fitem { padding: 8px 0; border-bottom: 1px solid #e3ecd6; }
+  .file-prev .fmeta { font-size: 14px; margin-top: 4px; }
   .file-prev .st-over { color: var(--orange); }
   .file-prev .st-bad { color: var(--red); }
   .btn {
@@ -208,7 +211,7 @@
 <div class="wrap">
   <header>
     <h1>⚙️ 单词拼写管理</h1>
-    <a class="back" id="backLink" href="index.html">← 返回练习</a>
+    <span class="head-links"><a class="back" href="help.html#parent">❓ 使用说明</a><a class="back" id="backLink" href="index.html">← 返回练习</a></span>
   </header>
 
   <!-- 密码 -->
@@ -270,7 +273,8 @@
             </div>
             <div class="file-prev" id="filePrev" hidden>
               <h3>导入预览</h3>
-              <div class="table-wrap"><table id="fileTable"></table></div>
+              <p class="hint" style="margin:0 0 6px">单词表名称可以直接改；同名的单词表会被覆盖。</p>
+              <div id="fileTable"></div>
               <div class="row">
                 <button class="btn green" id="fileOkBtn">✓ 确定导入</button>
                 <button class="btn ghost" id="fileCancelBtn">取消</button>
@@ -875,11 +879,12 @@
       else if (cfg.lists.some(l => l.name === name)) st = '<span class="st-over">已有同名单词表，会被覆盖</span>';
       else st = '<span class="st-new">新建</span>';
       const probs = (errs ? errs + ' 行格式不对（会跳过）' : '') + (errs && warns ? '，' : '') + (warns ? warns + ' 个提醒' : '');
-      return '<tr><td><input class="fname" data-i="' + i + '" maxlength="30" value="' + esc(x.name) + '"></td>'
-        + '<td class="num">' + x.count + ' 词</td><td>' + st + (probs ? '<br><small>' + probs + '</small>' : '') + '</td>'
-        + '<td><small style="color: var(--muted)">' + esc(x.file) + '</small></td></tr>';
+      // 一条一个单词表：名称输入框，下面一行是单词数、状态、格式问题和来源文件（侧栏很窄，不用表格）
+      return '<div class="fitem"><input class="fname" data-i="' + i + '" maxlength="30" value="' + esc(x.name) + '">'
+        + '<div class="fmeta"><b>' + x.count + ' 词</b> · ' + st + (probs ? ' · <span class="st-bad">' + probs + '</span>' : '') + '</div>'
+        + '<small class="fsrc">来自 ' + esc(x.file) + '</small></div>';
     });
-    $('fileTable').innerHTML = '<tr><th>单词表名称（可以改）</th><th class="num">单词数</th><th>状态</th><th>文件</th></tr>' + rows.join('');
+    $('fileTable').innerHTML = rows.join('');
     $('fileTable').querySelectorAll('input.fname').forEach(inp => inp.addEventListener('change', () => {
       fileSecs[+inp.dataset.i].name = inp.value;
       renderFilePrev();

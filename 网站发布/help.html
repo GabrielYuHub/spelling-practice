@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-CN" translate="no">
+<head>
+<meta charset="UTF-8">
+<meta name="google" content="notranslate">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2b6cb0">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>使用说明 · 单词拼写练习</title>
+<style>
+  :root { --blue: #2b6cb0; --blue-soft: #e6f0fa; --text: #1f2937; --muted: #6b7280; --line: #e5e9f0; --bg: #f4f7fb; --card: #fff; --warn: #fff7e0; --good: #e8f5e9; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 17px; line-height: 1.75; }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 16px 16px 60px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 4px 0 14px; }
+  header h1 { margin: 0; font-size: 26px; color: var(--blue); }
+  header a { color: var(--blue); text-decoration: none; font-size: 16px; }
+  .tabs { display: flex; gap: 10px; margin-bottom: 18px; position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 8px 0; }
+  .tabs a { flex: 1; text-align: center; padding: 12px; border-radius: 14px; background: var(--card); color: var(--muted); text-decoration: none; font-size: 19px; font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,.05); }
+  .tabs a.on { background: var(--blue); color: #fff; }
+  section.page[hidden] { display: none; }
+  .card { background: var(--card); border-radius: 18px; padding: 18px 22px; margin-bottom: 16px; box-shadow: 0 2px 10px rgba(0,0,0,.04); scroll-margin-top: 76px; }
+  h2 { font-size: 22px; margin: 0 0 8px; color: var(--blue); }
+  h3 { font-size: 18px; margin: 18px 0 6px; }
+  p { margin: 6px 0; }
+  ul, ol { margin: 6px 0; padding-left: 1.4em; }
+  li { margin: 3px 0; }
+  figure { margin: 12px 0 4px; }
+  figure img { width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--line); display: block; background: #fff; }
+  figure.narrow img { max-width: 380px; margin: 0 auto; }
+  figcaption { font-size: 14px; color: var(--muted); text-align: center; margin-top: 4px; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; margin: 8px 0; }
+  th, td { border-bottom: 1px solid var(--line); padding: 7px 6px; text-align: left; vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; white-space: nowrap; }
+  td:first-child { min-width: 6.5em; }
+  code { background: #eef2f7; border-radius: 5px; padding: 1px 5px; font-size: .9em; font-family: ui-monospace, Menlo, monospace; }
+  .tip { background: var(--warn); border-radius: 12px; padding: 10px 14px; margin: 10px 0; font-size: 16px; }
+  .good { background: var(--good); }
+  .toc { columns: 2; font-size: 16px; }
+  .toc a { color: var(--blue); text-decoration: none; }
+  /* 孩子版：大字、步骤编号 */
+  #kid { font-size: 20px; }
+  #kid .card { padding: 20px 24px; }
+  .step { display: flex; gap: 14px; align-items: flex-start; }
+  .num { flex: none; width: 40px; height: 40px; border-radius: 50%; background: var(--blue); color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-top: 2px; }
+  .step > div { flex: 1; min-width: 0; }
+  .big { font-size: 1.15em; font-weight: 600; }
+  .keys span { display: inline-block; min-width: 2em; text-align: center; background: #f4c21a; border-radius: 8px; padding: 0 6px; margin: 0 2px; font-weight: 700; box-shadow: 0 2px 0 #c99a00; }
+  @media (max-width: 600px) { .toc { columns: 1; } header h1 { font-size: 22px; } th, td { font-size: 14px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>📖 使用说明</h1>
+    <a href="index.html">← 返回练习</a>
+  </header>
+  <nav class="tabs">
+    <a href="#kid" id="tabKid">🧒 给小朋友</a>
+    <a href="#parent" id="tabParent">👨‍👩‍👧 给家长</a>
+  </nav>
+
+  <!-- ==================== 给小朋友 ==================== -->
+  <section class="page" id="kid">
+    <div class="card step"><span class="num">1</span><div>
+      <p class="big">打开练习</p>
+      <p>点 iPad 主屏幕上的 <b>“单词拼写”</b> 图标。</p>
+      <p>点你的名字，输入你的 4 位 <b>PIN</b> 密码。同一台 iPad 只要输一次。</p>
+      <figure><img src="help/help-kid-who.webp" alt="你是谁页面" loading="lazy"><figcaption>点自己的名字；卡片上能看到今天答对了几题</figcaption></figure>
+      <figure><img src="help/help-kid-pin.webp" alt="输入 PIN" loading="lazy"><figcaption>输入 4 位 PIN</figcaption></figure>
+    </div></div>
+
+    <div class="card step"><span class="num">2</span><div>
+      <p class="big">每天按这个顺序练</p>
+      <ol>
+        <li><b>📅 今日复习</b>：先把该复习的单词做完。</li>
+        <li><b>✨ 学新词</b>：复习做完后，再学今天的新单词。</li>
+        <li><b>📕 错词本</b>：还有时间，就把容易错的词再练练。</li>
+      </ol>
+      <p>灰色的卡片现在点不了，看看卡片上的小字就知道为什么。比如“先完成今日复习”。</p>
+      <figure><img src="help/help-kid-pick.webp" alt="选单词表页面" loading="lazy"><figcaption>先点“今日复习”；复习做完，“学新词”就能点了</figcaption></figure>
+    </div></div>
+
+    <div class="card step"><span class="num">3</span><div>
+      <p class="big">先看一遍单词</p>
+      <p>点开以后，先看看每个单词的意思，点 🔊 听一听怎么读，再点 <b>“▶ 开始练习”</b>。</p>
+      <figure><img src="help/help-kid-preview.webp" alt="单词列表页" loading="lazy"><figcaption>先看、先听，再开始</figcaption></figure>
+    </div></div>
+
+    <div class="card step"><span class="num">4</span><div>
+      <p class="big">拼单词</p>
+      <ul>
+        <li>看中文意思，听读音（点单词旁边的 🔊 可以再听一遍）。</li>
+        <li class="keys">在黄色键盘上点字母，填进空格里。<span>⇧</span> 换大写字母，<span>⌫</span> 删掉一个，“重置”全部重新填。</li>
+        <li>填好后点 <b>“提交答案”</b>。</li>
+      </ul>
+      <figure><img src="help/help-kid-game.webp" alt="答题页面" loading="lazy"><figcaption>把空格填满，再点“提交答案”</figcaption></figure>
+    </div></div>
+
+    <div class="card step"><span class="num">5</span><div>
+      <p class="big">答对了 🎉</p>
+      <p>会放烟花，然后出现一句例句并读给你听，读完自动换下一题。想快一点，可以直接点 <b>“下一个单词”</b>。</p>
+      <figure><img src="help/help-kid-example.webp" alt="答对后显示例句" loading="lazy"><figcaption>答对后看例句、听例句</figcaption></figure>
+    </div></div>
+
+    <div class="card step"><span class="num">6</span><div>
+      <p class="big">答错了也没关系</p>
+      <p>会提示“再想想”，还能再试几次。试完次数后，会把正确答案显示出来——<b>记住它</b>，再点 <b>“下一个单词”</b>。答错的词过几天会再来，多练几次就记住了。</p>
+      <figure><img src="help/help-kid-wrong.webp" alt="答错的提示" loading="lazy"><figcaption>答错了会告诉你还可以试几次</figcaption></figure>
+    </div></div>
+
+    <div class="card step"><span class="num">7</span><div>
+      <p class="big">上面的按钮</p>
+      <ul>
+        <li><b>🔊 自动朗读 / 🔇 已静音</b>：每道题要不要自动读出来。</li>
+        <li><b>自动·简单</b>：难度。点一下换一个：简单、进阶、听写。“自动”会按你学得好不好自己选。</li>
+        <li><b>← 换单词表</b>：不想练这个了，点它回去重新选。</li>
+      </ul>
+    </div></div>
+
+    <div class="card step"><span class="num">8</span><div>
+      <p class="big">打卡和徽章 ⭐</p>
+      <p>每天答对的题数够了，就 <b>打卡成功</b>。连续打卡的天数会显示成 🔥。点进度条可以看你拿到的徽章。</p>
+      <p>没有网络时也能练，上面会写 <b>“📴 离线练习中”</b>，联网后会自动保存。</p>
+    </div></div>
+  </section>
+
+  <!-- ==================== 给家长 ==================== -->
+  <section class="page" id="parent" hidden>
+    <div class="card">
+      <h2>目录</h2>
+      <div class="toc">
+        <div>1. <a href="#p-start">第一次使用</a></div>
+        <div>2. <a href="#p-daily">推荐的每日安排</a></div>
+        <div>3. <a href="#p-rules">复习和学新词的规则</a></div>
+        <div>4. <a href="#p-lists">单词表</a></div>
+        <div>5. <a href="#p-kids">孩子设置</a></div>
+        <div>6. <a href="#p-report">学习记录和报表</a></div>
+        <div>7. <a href="#p-backup">密码、备份和导入</a></div>
+        <div>8. <a href="#p-ipad">在 iPad 上使用</a></div>
+        <div>9. <a href="#p-faq">常见问题</a></div>
+      </div>
+    </div>
+
+    <div class="card" id="p-start">
+      <h2>1. 第一次使用</h2>
+      <ol>
+        <li><b>进入管理页</b>：练习页下方的“⚙️ 管理员”，或者在网址后面加 <code>/editor.html</code>，输入管理密码。每次进入都要输密码；右上角“🔒 退出”会退出并回到练习页。</li>
+        <li><b>设置孩子</b>：“👧 孩子”标签里改名字和 PIN（不要用 0000），设置每日目标、学新词等（见第 5 节）。</li>
+        <li><b>导入单词表</b>：“📚 单词表”标签里点“📂 选择文件导入”，选单词表文件（见第 4 节）。</li>
+        <li><b>在孩子的 iPad 上</b>：用 Safari 打开练习页，点“分享”→“添加到主屏幕”，以后从主屏幕图标打开（见第 8 节）。</li>
+      </ol>
+    </div>
+
+    <div class="card" id="p-daily">
+      <h2>2. 推荐的每日安排</h2>
+      <p>建议设置：<b>学新词每天大约 30 题、新词最多 5 个</b>，每日目标（打卡）设为 <b>25</b>。孩子每天按这个顺序做：</p>
+      <ol>
+        <li><b>📅 今日复习</b>：全部做完。</li>
+        <li><b>✨ 学新词</b>：程序按“每天题量 − 今天的复习数”自动算出今天学几个新词（最多 5 个），复习多的日子就少学或不学。</li>
+        <li><b>📕 错词本</b>：有时间再练。</li>
+      </ol>
+      <p>平时尽量不点单元单词表：在单元单词表里练过的词，就不算“新词”了。</p>
+      <div class="tip">按这个安排（每天约 30 题，答错比例 10% 左右），课本三上 211 条（单词、短语、句子）大约 <b>7 周</b>学完新词，<b>18 周</b>掌握 90%，<b>21 周</b>掌握约 96%。学完新词后每天只剩 10 题左右的复习，可以接着学下一个分组（比如英孚三上）。</div>
+    </div>
+
+    <div class="card" id="p-rules">
+      <h2>3. 复习和学新词的规则</h2>
+      <h3>每个单词记录了什么</h3>
+      <ul>
+        <li><b>熟练度分数</b>：答错 +2，答对 −1（最低 0）。同一道题第 3 次以后的答错不再加分。</li>
+        <li><b>复习等级</b> 1–6 级和 <b>下次复习日期</b>。</li>
+      </ul>
+      <h3>复习等级怎么变</h3>
+      <table>
+        <tr><th>情况</th><th>结果</th></tr>
+        <tr><td>第一次答对</td><td>进入第 1 级，明天复习</td></tr>
+        <tr><td>到了复习日答对</td><td>升一级。间隔依次是 1、2、4、7、15、30 天；第 6 级到期再答对 → <b>已掌握</b>，不再提醒</td></tr>
+        <tr><td>还没到复习日就答对</td><td>分数 −1，等级不变（不能“刷”到掌握）</td></tr>
+        <tr><td>答错</td><td><b>退 2 级</b>（最低第 1 级），明天复习；同一道题只退一次</td></tr>
+      </table>
+      <p>一个词从学会到掌握，最快大约 <b>59 天</b>。</p>
+      <h3>三张卡片怎么挑词</h3>
+      <table>
+        <tr><th></th><th>挑哪些词</th><th>顺序</th></tr>
+        <tr><td>📅 今日复习</td><td>复习日期到了（不晚于今天）、还没掌握的词</td><td>过期越久越先出</td></tr>
+        <tr><td>✨ 学新词</td><td>从没答过的词；今天的数量 = min(新词上限, 每天题量 − 今天的复习数) − 今天已学的；今日复习做完才能学</td><td>按管理页单词表的顺序</td></tr>
+        <tr><td>📕 错词本</td><td>熟练度分数大于 0 的词</td><td>分数越高越先出</td></tr>
+      </table>
+      <p>只从分配给这个孩子的分组里挑词；每轮最多出“每轮题数”个。</p>
+      <h3>难度</h3>
+      <ul>
+        <li><b>简单</b>：单词挖 2 个字母（至少 1 个元音），短语、句子约每 4 个字母挖 1 个。<b>进阶</b>：挖一半。<b>听写</b>：全部挖掉，只听读音拼。</li>
+        <li><b>自动</b>：还在错的词用简单；答对 2 次以上用进阶；答对 4 次以上用听写。</li>
+        <li>单词表里词前加 <code>*</code> 的词（人名、地名）不会被挖空。</li>
+      </ul>
+      <h3>答错时</h3>
+      <p>不会自动换题，孩子要继续改；答错达到“最多尝试次数”后显示正确答案，按“下一个单词”才换题。“下一个单词”不能用来跳过没做的题。</p>
+    </div>
+
+    <div class="card" id="p-lists">
+      <h2>4. 单词表</h2>
+      <h3>左栏：按分组管理</h3>
+      <ul>
+        <li>每个分组可以点开或收起；组里的单词表用 ▲▼ 调整顺序（学新词按这个顺序出新词）。</li>
+        <li>分组右边的 ⚙️：<b>改分组名</b>（组里单词表的名字和孩子的分组分配一起改）、<b>整组上移/下移</b>、<b>导出</b>这一组、<b>删除整组</b>（学习记录会保留）。</li>
+        <li>单词表名称里第一个空格前的部分就是分组，比如“课本三上 Unit 1”属于“课本三上”。</li>
+      </ul>
+      <figure class="narrow"><img src="help/help-parent-lists.webp" alt="单词表分组" loading="lazy"><figcaption>左栏按分组收起；⚙️ 打开分组的操作按钮</figcaption></figure>
+      <h3>导入单词表</h3>
+      <p>点“📂 选择文件导入”，可以一次选多个 <code>.txt</code> 文件。有 <code>## 名称</code> 标题的文件按标题拆成多个单词表；没有标题的，用文件名作为单词表名称。导入前会先显示预览，可以改名字；同名的单词表会被覆盖。</p>
+      <figure class="narrow"><img src="help/help-parent-import.webp" alt="导入预览" loading="lazy"><figcaption>导入预览：单词数、新建还是覆盖、格式问题</figcaption></figure>
+      <h3>单词表的格式</h3>
+      <p>每行一个：<code>英文 词性. 中文 | 例句 | 例句翻译</code>，例如：</p>
+      <p><code>school n. 学校 | I go to school every day. | 我每天去上学。</code><br>
+         <code>play sports 运动</code>（短语没有词性）<br>
+         <code>Children, this is *James. 孩子们，这是詹姆斯。</code>（<code>*</code> 表示这个词不挖空）<br>
+         <code># 这是注释</code></p>
+      <p>编辑单词表时，右边的“格式检查”会实时列出有问题的行。想让 AI 帮你编写单词表，可以把项目里的 <code>单词表编写提示词.md</code> 发给它。</p>
+    </div>
+
+    <div class="card" id="p-kids">
+      <h2>5. 孩子设置</h2>
+      <figure><img src="help/help-parent-kids.webp" alt="孩子设置" loading="lazy"><figcaption>“👧 孩子”标签</figcaption></figure>
+      <table>
+        <tr><th>设置</th><th>说明</th><th>默认</th></tr>
+        <tr><td>PIN</td><td>4 位数字，孩子进入练习页时输入。连续输错 5 次锁定 10 分钟，改 PIN 并保存可以立即解锁</td><td>0000</td></tr>
+        <tr><td>每日目标</td><td>每天答对这么多题就打卡（所有单词表都算）</td><td>20</td></tr>
+        <tr><td>最多尝试</td><td>同一道题答错这么多次后显示正确答案</td><td>6</td></tr>
+        <tr><td>每轮题数</td><td>一轮最多出多少题</td><td>20</td></tr>
+        <tr><td>可以练习</td><td>全部单词表，或者只勾选的分组（今日复习、学新词、错词本也只从这些分组挑词）</td><td>全部</td></tr>
+        <tr><td>学新词</td><td>每天大约多少题（复习 + 新词），其中新词最多几个；填 0 暂停学新词</td><td>30 题 / 5 个</td></tr>
+      </table>
+      <p>删除孩子会同时删除他的全部学习记录。</p>
+    </div>
+
+    <div class="card" id="p-report">
+      <h2>6. 学习记录和报表</h2>
+      <p>“📈 学习记录”标签：选孩子，可以看最近 7 天或 30 天的报表、错词排行和每一轮的记录。</p>
+      <figure><img src="help/help-parent-report.webp" alt="学习报表" loading="lazy"><figcaption>学习报表</figcaption></figure>
+      <table>
+        <tr><th>数字</th><th>含义</th></tr>
+        <tr><td>练习轮数 / 总用时 / 答题数 / 正确率</td><td>这段时间的合计</td></tr>
+        <tr><td>各单词表正确率</td><td>从低到高排，最薄弱的在最上面</td></tr>
+        <tr><td>已掌握</td><td>通过第 6 级复习的词</td></tr>
+        <tr><td>复习中</td><td>练过、还没掌握的词</td></tr>
+        <tr><td>今日待复习</td><td>复习中里，今天该复习的词</td></tr>
+        <tr><td>打卡天数</td><td>这段时间里达到每日目标的天数</td></tr>
+        <tr><td>连续打卡 / 最长连续</td><td>到今天（或昨天）为止的连续天数 / 历史最长</td></tr>
+      </table>
+      <p>复习的三个数只统计分配给这个孩子的分组。</p>
+    </div>
+
+    <div class="card" id="p-backup">
+      <h2>7. 密码、备份和导入</h2>
+      <p>都在“⚙️ 设置”标签里：</p>
+      <ul>
+        <li><b>修改密码</b>：立即生效。忘记密码的办法见第 9 节。</li>
+        <li><b>导出单词表</b>：所有单词表导出成一个 txt，可以再导入。</li>
+        <li><b>导出完整备份</b>：单词表、孩子（含 PIN）、答题记录和熟练度，导出成 JSON 文件。<b>建议每个月导出一次</b>，妥善保管。</li>
+        <li><b>合并导入</b>：把备份文件合并进来，不会删除现有数据，重复导入也不会重复。</li>
+      </ul>
+    </div>
+
+    <div class="card" id="p-ipad">
+      <h2>8. 在 iPad 上使用</h2>
+      <ul>
+        <li><b>添加到主屏幕</b>：Safari 打开练习页 → “分享” → “添加到主屏幕”。以后从主屏幕的“单词拼写”图标打开，全屏显示。</li>
+        <li><b>没有网络也能练</b>：这台 iPad 在线登录过的孩子可以照常练习，顶部显示“📴 离线练习中”，联网后自动上传记录。离线时不能换孩子，管理页也不能用。</li>
+        <li>直接在 Safari 里打开的网页，7 天不用时离线数据可能被清掉；从主屏幕图标打开的不会。</li>
+      </ul>
+    </div>
+
+    <div class="card" id="p-faq">
+      <h2>9. 常见问题</h2>
+      <table>
+        <tr><th>问题</th><th>办法</th></tr>
+        <tr><td>忘记管理密码</td><td>在 CloudBase 控制台 → 文档型数据库 → 集合 <code>spell_kv</code>，删除 <code>_id</code> 为 <code>auth_2ejson</code> 的数据，密码恢复成打包时设置的原始密码</td></tr>
+        <tr><td>孩子忘了 PIN / 被锁定</td><td>管理页“👧 孩子”里改一个新 PIN 并保存，立即可用</td></tr>
+        <tr><td>“学新词”一直是灰的</td><td>看卡片上的小字：先完成今日复习；今天的新词学完了；复习已够量；新词都学完了；或者新词上限是 0</td></tr>
+        <tr><td>页面提示“网络有点慢”</td><td>点“🔄 重试”或刷新；一般是网络慢或服务刚启动</td></tr>
+        <tr><td>更新后页面还是旧的</td><td>关掉 Safari 里的标签页（或从主屏幕重新打开）</td></tr>
+        <tr><td>报表和卡片上的数不一样</td><td>卡片会算上 iPad 上还没上传的记录；联网后会一致</td></tr>
+        <tr><td>换了一台 iPad</td><td>打开练习页，选名字、输入 PIN 即可，数据都在服务器上</td></tr>
+      </table>
+      <p>部署、更新和维护的步骤见项目里的 <code>部署步骤.md</code>。</p>
+    </div>
+  </section>
+</div>
+<script>
+  // 按网址里的 #kid / #parent 切换两个版本；目录链接（#p-…）属于家长版
+  function route() {
+    const h = location.hash || '#kid';
+    const parent = h === '#parent' || h.startsWith('#p-');
+    document.getElementById('kid').hidden = parent;
+    document.getElementById('parent').hidden = !parent;
+    document.getElementById('tabKid').classList.toggle('on', !parent);
+    document.getElementById('tabParent').classList.toggle('on', parent);
+    if (h === '#kid' || h === '#parent') window.scrollTo(0, 0);
+    else { const el = document.getElementById(h.slice(1)); if (el) el.scrollIntoView(); } // 切换版本后再滚到这一节（避开顶部标签栏）
+  }
+  window.addEventListener('hashchange', route);
+  window.addEventListener('load', () => setTimeout(route, 0));
+  route();
+</script>
+</body>
+</html>

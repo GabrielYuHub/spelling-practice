@@ -1,8 +1,9 @@
 // 离线缓存（Service Worker）：让网页在没有网络时也能打开
 // 网页文件“先网络后缓存”：在线时总是取最新版本并更新缓存，4 秒没有回应或断网时用缓存里的版本
 // 接口数据（/api/app）不经过这里，由练习页自己在本机保存（见 index.html 的离线数据）
-const CACHE = 'spell-pages-v1';
-const FILES = ['./', 'index.html', 'editor.html', 'wordlib.js', 'words.js', 'manifest.json', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
+const CACHE = 'spell-pages-v2';
+// 使用说明的截图不预先缓存，看过一次后会自动存下来
+const FILES = ['./', 'index.html', 'editor.html', 'help.html', 'wordlib.js', 'words.js', 'manifest.json', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 const TIMEOUT = 4000;
 
 self.addEventListener('install', e => {

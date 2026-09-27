@@ -286,6 +286,17 @@ test('离线使用需要的文件：Service Worker、manifest、图标（图片�
   // sw.js 里缓存的文件都能取到
   const files = JSON.parse(sw.body.match(/const FILES = (\[[^\]]*\])/)[1].replace(/'/g, '"'));
   for (const f of files) assert.equal((await api.raw('GET', '/' + f.replace('./', ''))).statusCode, 200, f);
+  // 使用说明和它引用的截图都能取到
+  const help = await api.raw('GET', '/help.html');
+  assert.equal(help.statusCode, 200);
+  const imgs = [...help.body.matchAll(/src="help\/([^"]+)"/g)].map(m => m[1]);
+  assert.ok(imgs.length >= 8, '使用说明里有截图');
+  for (const f of imgs) {
+    const r = await api.raw('GET', '/help/' + f);
+    assert.equal(r.statusCode, 200, f);
+    assert.equal(r.headers['content-type'], 'image/webp');
+    assert.equal(Buffer.from(r.body, 'base64').subarray(8, 12).toString(), 'WEBP');
+  }
   const head = await api.raw('HEAD', '/icon-192.png');
   assert.equal(head.isBase64Encoded, false);
 });

@@ -9,6 +9,7 @@ const FILES = {
   'editor.html': 'text/html; charset=utf-8',
   'wordlib.js': 'text/javascript; charset=utf-8',
   'words.js': 'text/javascript; charset=utf-8',
+  'help.html': 'text/html; charset=utf-8',
   'sw.js': 'text/javascript; charset=utf-8',
   'manifest.json': 'application/manifest+json; charset=utf-8',
   'icon-192.png': 'image/png',
@@ -16,10 +17,18 @@ const FILES = {
   'apple-touch-icon.png': 'image/png',
 };
 
+// 使用说明的截图：网站发布/help/ 下的所有 .webp（网页里用 help/xxx.webp 引用，云函数按文件名返回）
+const HELP_DIR = 'help';
+
 function makeAssets(siteDir) {
   const assets = {};
-  for (const [name, type] of Object.entries(FILES)) {
-    const file = path.join(siteDir, name);
+  const files = Object.entries(FILES).map(([name, type]) => [name, type, name]);
+  const helpDir = path.join(siteDir, HELP_DIR);
+  if (fs.existsSync(helpDir)) {
+    for (const f of fs.readdirSync(helpDir).sort()) if (f.endsWith('.webp')) files.push([f, 'image/webp', HELP_DIR + '/' + f]);
+  }
+  for (const [name, type, rel] of files) {
+    const file = path.join(siteDir, rel);
     // 图片等二进制文件存成 base64，返回时让 HTTP 网关解码
     assets[name] = type.startsWith('image/')
       ? { type, body: fs.readFileSync(file).toString('base64'), base64: true }

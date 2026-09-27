@@ -215,6 +215,8 @@
     background: #fff; color: #8a97a5; font-size: 15px; text-decoration: none;
   }
   .admin-link:active { background: #eef2f6; }
+  .foot-links { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+  .foot-links[hidden] { display: none; }
   .pin-admin { display: inline-block; margin-top: 16px; color: #9aa4ae; font-size: 14px; text-decoration: none; }
   .pick-msg.good { color: var(--green); }
   .card:disabled { opacity: .5; cursor: default; transform: none; }
@@ -342,7 +344,10 @@
     <div class="cards" id="cards"></div>
     <p class="pick-msg" id="pickMsg"></p>
     <button class="retry-btn" id="retryBtn" hidden>🔄 重试</button>
-    <a class="admin-link" id="adminLink" href="editor.html" hidden>⚙️ 管理员</a>
+    <div class="foot-links" id="adminLink" hidden>
+      <a class="admin-link" href="help.html#kid">❓ 使用说明</a>
+      <a class="admin-link" href="editor.html">⚙️ 管理员</a>
+    </div>
   </section>
 
   <!-- 答题 -->
@@ -392,7 +397,7 @@
     <div class="pin-dots" id="pinDots"><span></span><span></span><span></span><span></span></div>
     <p class="pin-msg" id="pinMsg"></p>
     <div class="pinpad" id="pinpad"></div>
-    <a class="pin-admin" href="editor.html">⚙️ 管理员</a>
+    <a class="pin-admin" href="help.html#kid">❓ 使用说明</a>　<a class="pin-admin" href="editor.html">⚙️ 管理员</a>
   </div>
 </div>
 
@@ -1033,6 +1038,8 @@
     show('adminLink', false); // 只在“你是谁？”页面显示
     show('speakChip', name === 'game');
     show('levelChip', name === 'game');
+    S.view = name;
+    updateChips();
     if (name !== 'pick') { show('reviewBanner', false); show('levelBox', false); show('groupBar', false); show('checkinBar', false); }
   }
 
@@ -1063,8 +1070,9 @@
     const c = $('childChip'), l = $('listChip');
     c.textContent = S.session ? '👤 ' + S.session.name : '';
     c.classList.toggle('placeholder', !S.session);
-    l.textContent = S.list ? '📚 ' + S.list.name : '';
-    l.classList.toggle('placeholder', !S.list || !S.online);
+    // 右上角的“换单词表”按钮：只在答题时显示（选表页不需要，单词列表页有自己的“← 换单词表”）
+    l.textContent = S.list ? '← 换单词表 · ' + S.list.name : '';
+    l.classList.toggle('placeholder', !S.list || !S.online || S.view !== 'game');
   }
 
   function renderCards(title, items) {
