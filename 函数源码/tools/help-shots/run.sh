@@ -8,6 +8,9 @@ set -e
 HERE="$(cd "$(dirname "$0")" && pwd)"
 FN="$HERE/../.."            # 函数源码/
 ROOT="$FN/.."               # 项目根目录
+if curl -s -o /dev/null --max-time 2 http://localhost:8770/; then
+  echo "❌ 8770 端口已经被占用（可能是另一个本地测试服务器），请先关掉它"; exit 1
+fi
 TMP="$(mktemp -d)"
 trap 'kill $SERVER 2>/dev/null; rm -rf "$TMP"' EXIT
 ( cd "$FN" && ./build.sh cloudbase demo-pw mock "$TMP/app.cjs" >/dev/null )

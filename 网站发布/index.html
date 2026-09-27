@@ -617,6 +617,7 @@
     'all-done': () => '新词都学完啦',
     paused: () => '暂停学新词',
   };
+  const myChild = () => S.session && S.config && S.config.children.find(x => x.id === S.session.child);
   // 每轮题数：孩子的设置（管理页“孩子”里设置，所有单词表通用），默认 20
   function roundOf() {
     const c = S.session && S.config && S.config.children.find(x => x.id === S.session.child);
@@ -715,7 +716,8 @@
 
   function levelOf(w) {
     if (S.level !== 'auto') return S.level;
-    return WordLib.autoLevel(S.stats[w.en]);
+    const c = myChild();
+    return WordLib.autoLevel(S.stats[w.en], { med: c && c.lvMed, dict: c && c.lvDict });
   }
 
   function renderWord(reveal = false) {
@@ -1048,11 +1050,37 @@
   function updateLevelChip() {
     $('levelChip').textContent = S.level === 'auto' && S.cur >= 0 ? '自动·' + levelName(S.lv) : levelName(S.level);
   }
+  // 难度按孩子保存在服务器上（家长在管理页也能改）；离线或网络不好时先记在本机，联网后再保存
+  const LEVEL_PENDING = 'spell_level_pending';
   function setLevel(id) {
     S.level = id;
-    ls.set('spell_level', id);
+    const c = myChild();
+    if (c) {
+      c.level = id;
+      ls.set(LEVEL_PENDING, { child: c.id, level: id });
+      syncLevel();
+    } else ls.set('spell_level', id); // 没有选孩子（离线模式）：记在本机
     updateLevelChip();
     renderLevelBar();
+  }
+  async function syncLevel() {
+    const p = ls.get(LEVEL_PENDING, null);
+    if (!p || !S.session || p.child !== S.session.child || S.offline || !S.online) return;
+    try {
+      await api('POST', '', { op: 'level', child: p.child, pin: S.session.pin, level: p.level });
+      const now = ls.get(LEVEL_PENDING, null);
+      if (now && now.child === p.child && now.level === p.level) ls.del(LEVEL_PENDING);
+    } catch (e) {
+      if (e instanceof ApiError && e.status !== 429) ls.del(LEVEL_PENDING); // 被拒绝（比如 PIN 已改）：不再重试
+    }
+  }
+  // 读到孩子的设置后，用这个孩子的难度（本机还没保存到服务器的优先）
+  function applyChildLevel() {
+    const c = myChild();
+    if (!c) return;
+    const p = ls.get(LEVEL_PENDING, null);
+    if (p && p.child === c.id) { S.level = p.level; c.level = p.level; syncLevel(); }
+    else S.level = c.level || 'auto';
   }
   function renderLevelBar() {
     const bar = $('levelBar');
@@ -1179,6 +1207,7 @@
       document.body.classList.remove('is-offline');
       S.config = cfg;
       await flushQueue(false); // 补传离线时的答题记录
+      syncLevel();
       // 刷新本机数据，下次离线时也是最新的
       const [all, st] = await Promise.all([api('GET', '?op=alltext'), api('GET', '?op=stats&child=' + encodeURIComponent(S.session.child))]);
       saveOffline(cfg, all, st);
@@ -1227,6 +1256,7 @@
     S.stats = (st && st.words) || {};
     S.days = (st && st.days) || {};
     replayQueue(S.stats, S.days);
+    applyChildLevel();
   }
 
   async function showListPicker(msg, good) {

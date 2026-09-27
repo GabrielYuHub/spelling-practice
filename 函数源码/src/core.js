@@ -7,6 +7,7 @@
 //   GET  ?op=alltext             全部单词表的内容（错词本、今日复习从所有单词表取词）
 //   POST { op:'pin', child, pin }            验证孩子 PIN
 //   POST { op:'record', child, pin, record } 提交答题记录并更新熟练度
+//   POST { op:'level', child, pin, level }   孩子在练习页切换难度（按孩子保存）
 //   POST { op:'admin', password, action, ... } 管理操作（见 admin()）
 //
 // 平台适配层（cloudbase.js）提供：
@@ -110,12 +111,23 @@ const DEFAULT_TRIES = 6; // 同一道题最多答错几次后显示正确答案
 const DEFAULT_ROUND = 20; // 每轮题数（每个孩子一个设置，所有单词表通用）
 const DEFAULT_DAILY = 30; // 学新词：每天题量（复习 + 新词）
 const DEFAULT_NEWCAP = 5; // 学新词：每天新词上限（0 = 暂停学新词）
+// 难度：每个孩子一个；“自动”时累计答对几次升进阶、几次升听写
+const LEVELS = ['auto', 'easy', 'medium', 'dictation'];
+const DEFAULT_LV_MED = 2, DEFAULT_LV_DICT = 4;
+const cleanLevel = v => (LEVELS.includes(v) ? v : 'auto');
+// 进阶 1–19 次，听写比进阶多（最多 20 次）
+function levelRule(med, dict, old) {
+  const m = int(med, 1, 19, (old && old.lvMed) || DEFAULT_LV_MED);
+  const d = int(dict, 2, 20, (old && old.lvDict) || DEFAULT_LV_DICT);
+  return { lvMed: m, lvDict: Math.max(d, m + 1) };
+}
 const DAYS_KEEP = 400; // 每日答对数保留的天数
 
 function publicConfig(cfg) {
   return {
-    children: cfg.children.map(({ id, name, goal, tries, round, daily, newCap, groups }) => ({ id, name, goal: goal || DEFAULT_GOAL, tries: tries || DEFAULT_TRIES, round: round || DEFAULT_ROUND,
-      daily: daily || DEFAULT_DAILY, newCap: newCap == null ? DEFAULT_NEWCAP : newCap, groups: cleanGroups(groups) })),
+    children: cfg.children.map(({ id, name, goal, tries, round, daily, newCap, groups, level, lvMed, lvDict }) => ({ id, name, goal: goal || DEFAULT_GOAL, tries: tries || DEFAULT_TRIES, round: round || DEFAULT_ROUND,
+      daily: daily || DEFAULT_DAILY, newCap: newCap == null ? DEFAULT_NEWCAP : newCap, groups: cleanGroups(groups),
+      level: cleanLevel(level), lvMed: lvMed || DEFAULT_LV_MED, lvDict: lvDict || DEFAULT_LV_DICT })),
     lists: cfg.lists.map(l => ({ id: l.id, name: l.name, roundSize: l.roundSize, count: l.count, group: listGroup(l) })),
   };
 }
@@ -469,7 +481,8 @@ async function admin(s, env, body) {
       const id = c.id && cfg.children.some(o => o.id === c.id) ? c.id : newId('c');
       const old = cfg.children.find(o => o.id === id);
       return { id, name, pin, goal: int(c.goal, 1, 500, (old && old.goal) || DEFAULT_GOAL), tries: int(c.tries, 1, 10, (old && old.tries) || DEFAULT_TRIES), round: int(c.round, 1, 100, (old && old.round) || DEFAULT_ROUND),
-        daily: int(c.daily, 10, 200, (old && old.daily) || DEFAULT_DAILY), newCap: int(c.newCap, 0, 50, old && old.newCap != null ? old.newCap : DEFAULT_NEWCAP), groups: cleanGroups(c.groups) };
+        daily: int(c.daily, 10, 200, (old && old.daily) || DEFAULT_DAILY), newCap: int(c.newCap, 0, 50, old && old.newCap != null ? old.newCap : DEFAULT_NEWCAP), groups: cleanGroups(c.groups),
+        level: cleanLevel(c.level !== undefined ? c.level : old && old.level), ...levelRule(c.lvMed, c.lvDict, old) };
     });
     const removed = cfg.children.filter(o => !children.some(c => c.id === o.id));
     // 修改了 PIN 或被删除的孩子，解除锁定
@@ -557,7 +570,8 @@ async function admin(s, env, body) {
           if (cfg.children.length >= 20) { sum.skipped.push(name + '：孩子已达 20 个上限'); continue; }
           const id = typeof c.id === 'string' && ID_RE.test(c.id) && !cfg.children.some(x => x.id === c.id) ? c.id : newId('c');
           t = { id, name, pin, goal: int(c.goal, 1, 500, DEFAULT_GOAL), tries: int(c.tries, 1, 10, DEFAULT_TRIES), round: int(c.round, 1, 100, DEFAULT_ROUND),
-            daily: int(c.daily, 10, 200, DEFAULT_DAILY), newCap: int(c.newCap, 0, 50, DEFAULT_NEWCAP), groups: cleanGroups(c.groups) };
+            daily: int(c.daily, 10, 200, DEFAULT_DAILY), newCap: int(c.newCap, 0, 50, DEFAULT_NEWCAP), groups: cleanGroups(c.groups),
+            level: cleanLevel(c.level), ...levelRule(c.lvMed, c.lvDict) };
           cfg.children.push(t);
           sum.childrenAdded++;
         } else {
@@ -568,6 +582,8 @@ async function admin(s, env, body) {
           if (c.round !== undefined) t.round = int(c.round, 1, 100, t.round || DEFAULT_ROUND);
           if (c.daily !== undefined) t.daily = int(c.daily, 10, 200, t.daily || DEFAULT_DAILY);
           if (c.newCap !== undefined) t.newCap = int(c.newCap, 0, 50, t.newCap != null ? t.newCap : DEFAULT_NEWCAP);
+          if (c.level !== undefined) t.level = cleanLevel(c.level);
+          if (c.lvMed !== undefined || c.lvDict !== undefined) Object.assign(t, levelRule(c.lvMed, c.lvDict, t));
           if (c.groups !== undefined) t.groups = cleanGroups(c.groups);
           sum.childrenUpdated++;
         }
@@ -746,6 +762,18 @@ export function handlePost(env, bodyText) {
       return { ok: true, name: child.name };
     }
     if (body.op === 'record') return saveRecord(s, await loadConfig(s, env), body);
+    // 孩子在练习页切换难度：验证 PIN 后保存到这个孩子的设置里
+    if (body.op === 'level') {
+      const child = await verifyChild(s, await loadConfig(s, env), body.child, body.pin);
+      if (!LEVELS.includes(body.level)) bad('难度不对');
+      await updateJSON(s, CONFIG_KEY, cfg => {
+        const c = cfg && cfg.children.find(x => x.id === child.id);
+        if (!c || c.level === body.level) return null;
+        c.level = body.level;
+        return cfg;
+      });
+      return { ok: true, level: body.level };
+    }
     if (body.op === 'admin') {
       await verifyAdmin(s, env, body.password);
       return admin(s, env, body);

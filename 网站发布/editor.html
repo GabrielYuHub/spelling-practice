@@ -129,6 +129,15 @@
   /* 孩子 */
   .kids { max-width: 780px; }
   .kid-row { display: grid; grid-template-columns: 1fr 100px 90px 90px 90px auto; gap: 10px; align-items: center; margin-bottom: 10px; }
+  .kf { display: block; min-width: 0; }
+  .kf span { display: none; }
+  @media (max-width: 700px) {
+    #tab-kids .kid-head { display: none; }
+    .kid-row { grid-template-columns: 1fr 1fr; padding-bottom: 12px; border-bottom: 1px solid #e5e9f0; }
+    .kf span { display: block; font-size: 13px; color: var(--muted); margin-bottom: 2px; }
+    .kid-row > .btn.danger { justify-self: start; align-self: end; }
+    .kid-lists .mode, .kid-plan { gap: 6px 12px; }
+  }
   .kid-row input { width: 100%; }
   .kid-row .pin { letter-spacing: 6px; text-align: center; }
   .kid-head { display: grid; grid-template-columns: 1fr 100px 90px 90px 90px auto; gap: 10px; color: var(--muted); font-size: 14px; margin-bottom: 6px; }
@@ -142,6 +151,7 @@
   .kid-lists .grp b { color: var(--muted); font-weight: normal; min-width: 3em; }
   .kid-plan { grid-column: 1 / -1; font-size: 15px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 0 12px; }
   .kid-row .kid-plan input { width: 64px; text-align: center; padding: 4px 6px; }
+  .kid-plan select { font: inherit; font-size: 15px; padding: 4px 6px; }
   .kid-plan small { color: var(--muted); }
   .warn-text { color: #b26a00; font-size: 14px; }
 
@@ -304,6 +314,7 @@
         <p class="hint">每个孩子在练习页选名字后要输入自己的 4 位 PIN（每台设备只需输入一次）。<br>删除孩子会同时删除他的全部学习记录。<br>每日目标：孩子每天答对这么多题就算打卡（1–500，默认 20），所有单词表都算，按北京时间。<br>
           每轮题数：一轮最多出多少题（1–100，默认 20），所有单词表、今日复习和错词本都按这个数；单词表的词数不超过它时，一轮出完全部单词。<br>
           最多尝试：同一道题答错这么多次后，显示正确答案，孩子按“下一个单词”才换题（1–10，默认 6）；答错时不会自动换题，也不能跳过。<br>
+          难度：孩子在练习页切换难度时也会改这里；“自动”按每个词累计答对的次数选简单、进阶或听写，最近答错过的词用简单。<br>
           学新词：练习页的“✨ 学新词”每天按这里的设置出新词：今天的新词数 = 新词上限 和（每天题量 − 今天的复习数）中较小的那个；今日复习做完才能学新词。新词按单词表在左边列表里的顺序出。<br>
           可以练习：选“全部单词表”时，以后新建的单词表也会自动出现；选“指定分组”时只显示勾选的分组里的单词表（没有填分组的单词表算“其他”），今日复习和错词本也只从这些表里挑词。</p>
         <div class="kid-head"><span>名字</span><span>PIN（4 位数字）</span><span>每日目标（题）</span><span>最多尝试（次）</span><span>每轮题数</span><span></span></div>
@@ -911,11 +922,13 @@
     const row = document.createElement('div');
     row.className = 'kid-row';
     row.dataset.id = k.id || '';
-    row.innerHTML = '<input type="text" class="name" maxlength="12" placeholder="名字">'
-      + '<input type="text" class="pin" maxlength="4" inputmode="numeric" placeholder="0000">'
-      + '<input type="number" class="goal" min="1" max="500" placeholder="20">'
-      + '<input type="number" class="tries" min="1" max="10" placeholder="6">'
-      + '<input type="number" class="round" min="1" max="100" placeholder="20">'
+    // 每个输入框带自己的标签：宽屏时隐藏（用表头），手机宽度时显示
+    const f = (label, input) => '<label class="kf"><span>' + label + '</span>' + input + '</label>';
+    row.innerHTML = f('名字', '<input type="text" class="name" maxlength="12" placeholder="名字">')
+      + f('PIN', '<input type="text" class="pin" maxlength="4" inputmode="numeric" placeholder="0000">')
+      + f('每日目标（题）', '<input type="number" class="goal" min="1" max="500" placeholder="20">')
+      + f('最多尝试（次）', '<input type="number" class="tries" min="1" max="10" placeholder="6">')
+      + f('每轮题数', '<input type="number" class="round" min="1" max="100" placeholder="20">')
       + '<button class="btn danger small">删除</button>';
     row.querySelector('.name').value = k.name || '';
     row.querySelector('.pin').value = k.pin || '';
@@ -948,6 +961,16 @@
     plan.querySelector('.newcap').value = k.newCap != null ? k.newCap : 5;
     plan.querySelectorAll('input').forEach(i => i.addEventListener('input', checkKids));
     row.appendChild(plan);
+    // 难度：孩子在练习页切换的难度也保存在这里；“自动”时累计答对几次升进阶、几次升听写
+    const lv = document.createElement('div');
+    lv.className = 'kid-plan';
+    lv.innerHTML = '难度：<select class="level"><option value="auto">自动</option><option value="easy">简单</option><option value="medium">进阶</option><option value="dictation">听写</option></select>'
+      + '　自动时答对 <input type="number" class="lvmed" min="1" max="19" placeholder="2"> 次升进阶，'
+      + '<input type="number" class="lvdict" min="2" max="20" placeholder="4"> 次升听写 <small>（最近答错过的词仍用简单）</small>';
+    lv.querySelector('.level').value = k.level || 'auto';
+    lv.querySelector('.lvmed').value = k.lvMed || 2;
+    lv.querySelector('.lvdict').value = k.lvDict || 4;
+    row.appendChild(lv);
     row.querySelector('button').addEventListener('click', () => {
       if ($('kidRows').children.length <= 1) return message('kidMsg', '至少要有一个孩子。', false);
       row.remove();
@@ -973,6 +996,9 @@
       round: r.querySelector('.round').value.trim() === '' ? 20 : Number(r.querySelector('.round').value), // 留空按默认 20
       daily: r.querySelector('.daily').value.trim() === '' ? 30 : Number(r.querySelector('.daily').value), // 留空按默认 30
       newCap: r.querySelector('.newcap').value.trim() === '' ? 5 : Number(r.querySelector('.newcap').value), // 留空按默认 5
+      level: r.querySelector('.level').value,
+      lvMed: r.querySelector('.lvmed').value.trim() === '' ? 2 : Number(r.querySelector('.lvmed').value), // 留空按默认 2
+      lvDict: r.querySelector('.lvdict').value.trim() === '' ? 4 : Number(r.querySelector('.lvdict').value), // 留空按默认 4
       groups: r.querySelector('.kid-lists input[value="some"]').checked // null 表示全部单词表
         ? [...r.querySelectorAll('.kid-lists .picks input:checked')].map(c => c.value) : null,
     }));
@@ -1005,6 +1031,8 @@
       if (!(Number.isInteger(k.round) && k.round >= 1 && k.round <= 100)) return message('kidMsg', k.name + ' 的每轮题数需要在 1–100 之间。', false);
       if (!(Number.isInteger(k.daily) && k.daily >= 10 && k.daily <= 200)) return message('kidMsg', k.name + ' 的每天题量需要在 10–200 之间。', false);
       if (!(Number.isInteger(k.newCap) && k.newCap >= 0 && k.newCap <= 50)) return message('kidMsg', k.name + ' 的每天新词上限需要在 0–50 之间。', false);
+      if (!(Number.isInteger(k.lvMed) && k.lvMed >= 1 && k.lvMed <= 19)) return message('kidMsg', k.name + ' 的“答对几次升进阶”需要在 1–19 之间。', false);
+      if (!(Number.isInteger(k.lvDict) && k.lvDict > k.lvMed && k.lvDict <= 20)) return message('kidMsg', k.name + ' 的“答对几次升听写”要比升进阶的次数多，最多 20。', false);
       if (k.groups && !k.groups.length) return message('kidMsg', k.name + ' 选了“指定分组”，请至少勾选一个分组。', false);
     }
     const removed = cfg.children.filter(c => !kids.some(k => k.id === c.id));
@@ -1304,7 +1332,7 @@
       message('importMsg', '正在导入单词表和孩子…', true);
       const r1 = await admin('importConfig', {
         lists: d.config.lists.map(l => ({ id: l.id, name: l.name, roundSize: l.roundSize, group: l.group, text: (d.wordlists || {})[l.id] || '', apply: opt.lists })),
-        children: d.config.children.map(c => ({ id: c.id, name: c.name, pin: c.pin, goal: c.goal, tries: c.tries, round: c.round, daily: c.daily, newCap: c.newCap, groups: c.groups, apply: opt.kids })),
+        children: d.config.children.map(c => ({ id: c.id, name: c.name, pin: c.pin, goal: c.goal, tries: c.tries, round: c.round, daily: c.daily, newCap: c.newCap, groups: c.groups, level: c.level, lvMed: c.lvMed, lvDict: c.lvDict, apply: opt.kids })),
       });
       cfg = r1.config;
       const lines = [];

@@ -104,6 +104,11 @@ test('自动难度：按熟练度选择', () => {
   assert.equal(W.autoLevel({ right: 2 }), 'medium');
   assert.equal(W.autoLevel({ right: 5 }), 'dictation');
   assert.equal(W.autoLevel({ right: 5, score: 2 }), 'easy'); // 最近还在错
+  // 每个孩子可以设置升级次数
+  assert.equal(W.autoLevel({ right: 2 }, { med: 3, dict: 6 }), 'easy');
+  assert.equal(W.autoLevel({ right: 3 }, { med: 3, dict: 6 }), 'medium');
+  assert.equal(W.autoLevel({ right: 6 }, { med: 3, dict: 6 }), 'dictation');
+  assert.equal(W.autoLevel({ right: 1 }, { med: 1, dict: 2 }), 'medium');
 });
 
 test('熟练度与间隔复习：1、2、4、7、15、30 天', () => {

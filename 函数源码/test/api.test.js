@@ -9,7 +9,7 @@ test('首次访问自动初始化：默认孩子和默认单词表', async () =>
   const api = fresh();
   const { status, data } = await api.get('config');
   assert.equal(status, 200);
-  assert.deepEqual(data.children, [{ id: 'c_default', name: '小朋友', goal: 20, tries: 6, round: 20, daily: 30, newCap: 5, groups: null }]);
+  assert.deepEqual(data.children, [{ id: 'c_default', name: '小朋友', goal: 20, tries: 6, round: 20, daily: 30, newCap: 5, groups: null, level: 'auto', lvMed: 2, lvDict: 4 }]);
   assert.equal(data.lists[0].id, 'l_default');
   assert.equal(data.lists[0].group, '三上');
   assert.ok(data.lists[0].count > 0);
@@ -67,6 +67,22 @@ test('答题记录：同一轮按序号增量提交，重复提交被忽略', as
   assert.equal(recs[0].status, 'complete');
   assert.equal(recs[0].listName, '三上 Unit 1');
   assert.equal((await api.admin('records', { child: 'c_default', list: 'l_nope' })).data.records.length, 0);
+});
+
+test('难度：按孩子保存；孩子切换要验证 PIN；家长可以设置升级次数', async () => {
+  const api = fresh();
+  await api.get('config');
+  assert.equal((await api.post({ op: 'level', child: 'c_default', pin: '0000', level: 'dictation' })).status, 200);
+  assert.equal((await api.get('config')).data.children[0].level, 'dictation');
+  assert.equal((await api.post({ op: 'level', child: 'c_default', pin: '1111', level: 'easy' })).status, 401);
+  assert.equal((await api.post({ op: 'level', child: 'c_default', pin: '0000', level: 'hard' })).status, 400);
+  assert.equal((await api.get('config')).data.children[0].level, 'dictation');
+  let c = (await api.admin('saveChildren', { children: [{ id: 'c_default', name: '小朋友', pin: '0000', level: 'medium', lvMed: 3, lvDict: 6 }] })).data.config.children[0];
+  assert.deepEqual([c.level, c.lvMed, c.lvDict], ['medium', 3, 6]);
+  c = (await api.admin('saveChildren', { children: [{ id: 'c_default', name: '小朋友', pin: '0000', lvMed: 5, lvDict: 3 }] })).data.config.children[0];
+  assert.deepEqual([c.level, c.lvMed, c.lvDict], ['medium', 5, 6], '没传难度时保留原来的；听写次数至少比进阶多 1');
+  c = (await api.admin('saveChildren', { children: [{ id: 'c_default', name: '小朋友', pin: '0000', level: 'xx' }] })).data.config.children[0];
+  assert.equal(c.level, 'auto');
 });
 
 test('答题记录：同一题第 3 次及以后的答错不加熟练度分数（ns）', async () => {

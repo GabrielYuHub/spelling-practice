@@ -129,12 +129,13 @@
     if (lv === 'medium') return letters.length <= 2 ? [pick(letters)] : pickN(word, letters, Math.ceil(letters.length / 2));
     return pickBlanks(word, letters);
   }
-  // “自动”难度：还不熟（熟练度分数 > 0）用简单；答对 4 次以上用听写，2 次以上用进阶
-  function autoLevel(st) {
+  // “自动”难度：还不熟（熟练度分数 > 0）用简单；累计答对 dict 次以上用听写，med 次以上用进阶（默认 2、4，每个孩子可以设置）
+  function autoLevel(st, opts) {
     st = st || {};
+    const med = (opts && opts.med) || 2, dict = (opts && opts.dict) || 4;
     if (st.score) return 'easy';
-    if ((st.right || 0) >= 4) return 'dictation';
-    if ((st.right || 0) >= 2) return 'medium';
+    if ((st.right || 0) >= dict) return 'dictation';
+    if ((st.right || 0) >= med) return 'medium';
     return 'easy';
   }
 
