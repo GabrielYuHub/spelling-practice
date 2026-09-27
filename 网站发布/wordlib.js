@@ -87,18 +87,74 @@
     return { words, problems };
   }
 
+  // ---------- 挖空规则（练习页用；rnd 可替换，方便测试） ----------
+  // 单个单词：字母数 ≤2 空 1 个；否则空 2 个，其中至少 1 个元音（无 aeiou 时用 y，再没有就随机）
+  // 短语/句子（含空格）：约每 4 个字母空 1 个，最少 2 个、最多 8 个，至少一半是元音，尽量不相邻
+  // 难度：easy 简单（上面的规则）/ medium 进阶（挖一半字母）/ dictation 听写（全部字母）
+  // fixed：单词表里加了 * 的词（人名、地名等）的字母位置，任何难度都不挖空
+  let rnd = Math.random;
+  const rand = n => Math.floor(rnd() * n);
+  const pick = arr => arr[rand(arr.length)];
+  const shuffle = arr => { for (let i = arr.length - 1; i > 0; i--) { const j = rand(i + 1); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; };
+  const isVowel = c => 'aeiou'.includes(c.toLowerCase());
+  function pickSpread(pool, k, chosen) {
+    const near = i => chosen.some(j => Math.abs(i - j) <= 1);
+    const order = shuffle(pool.filter(i => !chosen.includes(i)));
+    for (const i of order) if (k > 0 && !near(i)) { chosen.push(i); k--; }
+    for (const i of order) if (k > 0 && !chosen.includes(i)) { chosen.push(i); k--; }
+  }
+  const letterIdx = (word, fixed) => [...word].map((c, i) => isLetter(c) && !(fixed && fixed.includes(i)) ? i : -1).filter(i => i >= 0);
+  // 挖 n 个空：至少一半是元音，尽量不相邻
+  function pickN(word, letters, n) {
+    let vowels = letters.filter(i => isVowel(word[i]));
+    if (!vowels.length) vowels = letters.filter(i => word[i].toLowerCase() === 'y');
+    const chosen = [];
+    pickSpread(vowels, Math.ceil(n / 2), chosen);
+    pickSpread(letters, n - chosen.length, chosen);
+    return chosen.sort((a, b) => a - b);
+  }
+  function pickBlanks(word, letters) {
+    if (letters.length <= 2) return [pick(letters)];
+    if (word.includes(' ')) return pickN(word, letters, Math.min(8, Math.max(2, Math.round(letters.length / 4))));
+    let vowels = letters.filter(i => isVowel(word[i]));
+    if (!vowels.length) vowels = letters.filter(i => word[i].toLowerCase() === 'y');
+    const first = vowels.length ? pick(vowels) : pick(letters);
+    const second = pick(letters.filter(i => i !== first));
+    return [first, second].sort((a, b) => a - b);
+  }
+  // 返回要挖空的字符位置（升序）
+  function blanksFor(word, lv, fixed) {
+    const letters = letterIdx(word, fixed);
+    if (lv === 'dictation') return letters;
+    if (lv === 'medium') return letters.length <= 2 ? [pick(letters)] : pickN(word, letters, Math.ceil(letters.length / 2));
+    return pickBlanks(word, letters);
+  }
+  // “自动”难度：还不熟（熟练度分数 > 0）用简单；答对 4 次以上用听写，2 次以上用进阶
+  function autoLevel(st) {
+    st = st || {};
+    if (st.score) return 'easy';
+    if ((st.right || 0) >= 4) return 'dictation';
+    if ((st.right || 0) >= 2) return 'medium';
+    return 'easy';
+  }
+
   // ---------- 熟练度与间隔复习（练习页和云函数共用，保证两边算法一致） ----------
   // 每个单词的统计：{ score, wrong, right, lastWrong, lvl, due, mastered }
   //   score：熟练度分数，答错 +2、答对 -1（最低 0）
   //   lvl：复习等级 1–6（0 或没有表示还没进入复习计划）；due：下次复习日期（北京时间 YYYY-MM-DD）
+  //   到期答对升一级；答错退 2 级（最低第 1 级）、明天复习
   //   mastered：通过第 6 级复习后为 true，不再提醒
+  //   first：第一次答这个词的日期；last：最近一次答的日期（北京时间，用于“学新词”计算当天的计划）
   const INTERVALS = [1, 2, 4, 7, 15, 30];
   const bjDate = t => new Date((t == null ? Date.now() : new Date(t).getTime()) + 8 * 3600e3).toISOString().slice(0, 10);
   const addDays = (d, n) => new Date(Date.parse(d + 'T00:00:00Z') + n * 86400e3).toISOString().slice(0, 10);
 
   // noScore：同一道题第 3 次及以后的答错只记次数、不再加熟练度分数（每题最多 +4）
-  function applyAnswer(w, ok, at, noScore) {
+  // repeat：同一道题第 2 次及以后的答错，复习等级不再往下退（每道题最多退 2 级）
+  function applyAnswer(w, ok, at, noScore, repeat) {
     const day = bjDate(at);
+    if (!w.first && !(w.right || 0) && !(w.wrong || 0)) w.first = day;
+    w.last = day;
     if (ok) {
       w.right = (w.right || 0) + 1;
       w.score = Math.max(0, (w.score || 0) - 1);
@@ -112,11 +168,45 @@
       w.wrong = (w.wrong || 0) + 1;
       if (!noScore) w.score = (w.score || 0) + 2;
       w.lastWrong = at || new Date().toISOString();
-      w.lvl = 1; w.due = addDays(day, INTERVALS[0]); w.mastered = false;       // 答错：回到第 1 级，明天复习
+      // 答错：退 2 级（最低第 1 级；已掌握的按第 6 级算，退到第 4 级），明天复习
+      if (!repeat) w.lvl = Math.max(1, (w.mastered ? INTERVALS.length : (w.lvl || 0)) - 2);
+      w.lvl = w.lvl || 1;
+      w.due = addDays(day, INTERVALS[0]); w.mastered = false;
     }
     return w;
   }
   const isDue = (w, today) => !!(w && w.lvl && !w.mastered && w.due && w.due <= (today || bjDate()));
+
+  // ---------- 学新词：今天学几个、学哪几个 ----------
+  // pool：孩子能练的单词（按单词表顺序去重）；stats：熟练度；opts：{ target 每天题量, cap 每天新词上限, today }
+  // 今天的复习数 = 还没做的复习 + 今天已经做过的复习（以前学过、今天答过的词）；今天学过的新词 = first 是今天的词
+  // 今天还能学的新词 = min(上限, 每天题量 − 今天的复习数) − 今天学过的新词，最少 0
+  // 一天中途刷新页面、换设备，结果都一样
+  const isNewWord = st => !st || (!(st.right || 0) && !(st.wrong || 0));
+  function planNewWords(pool, stats, opts) {
+    const today = opts.today || bjDate();
+    const target = opts.target == null ? 30 : opts.target, cap = opts.cap == null ? 5 : opts.cap;
+    let dueNow = 0, reviewedToday = 0, newToday = 0;
+    const fresh = [];
+    for (const w of pool) {
+      const st = stats[w.en];
+      if (isNewWord(st)) { fresh.push(w); continue; }
+      if (st.first === today) newToday++;
+      else if (isDue(st, today)) dueNow++;
+      else if (st.last === today) reviewedToday++;
+    }
+    const reviews = dueNow + reviewedToday;
+    const quota = Math.max(0, Math.min(cap, target - reviews) - newToday);
+    let status;
+    if (!cap) status = 'paused';                 // 上限为 0：暂停学新词
+    else if (!fresh.length) status = 'all-done'; // 新词都学完了
+    else if (dueNow) status = 'review-first';    // 先完成今日复习
+    else if (quota) status = 'ready';
+    else if (newToday) status = 'today-done';    // 今天的新词学完了
+    else status = 'review-only';                 // 今天复习已经够量，只复习
+    return { status, quota: status === 'ready' ? quota : 0, plannedQuota: quota, dueNow, reviews, newToday, remaining: fresh.length,
+      words: status === 'ready' ? fresh.slice(0, quota) : [] };
+  }
 
   // ---------- 每日打卡 ----------
   // days：{ 'YYYY-MM-DD'（北京时间）: 当天答对题数 }；goal：每日目标（按当前目标评估每一天）
@@ -141,5 +231,5 @@
   const STREAK_BADGES = [3, 7, 14, 30, 100];
   const MASTER_BADGES = [10, 50, 100, 200];
 
-  (typeof window !== 'undefined' ? window : globalThis).WordLib = { parse, analyze, parseLine, isLetter, applyAnswer, isDue, bjDate, addDays, INTERVALS, checkin, STREAK_BADGES, MASTER_BADGES };
+  (typeof window !== 'undefined' ? window : globalThis).WordLib = { parse, analyze, parseLine, isLetter, blanksFor, planNewWords, isNewWord, autoLevel, setRandom: f => { rnd = f || Math.random; }, applyAnswer, isDue, bjDate, addDays, INTERVALS, checkin, STREAK_BADGES, MASTER_BADGES };
 })();

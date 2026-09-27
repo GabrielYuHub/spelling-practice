@@ -1,6 +1,6 @@
 // 腾讯云 CloudBase 适配层：一个普通云函数，通过 HTTP 网关挂在域名根路径 “/”
 //   …/api/app                  → 接口（业务逻辑见 core.js）
-//   / index.html editor.html wordlib.js words.js → 网页文件（打包时内置，不依赖静态网站托管）
+//   / index.html editor.html wordlib.js words.js sw.js manifest.json 图标 → 网页文件（打包时内置，不依赖静态网站托管）
 // 数据存在文档型数据库的集合 spell_kv 中，每条记录是一个“键 → 文本”
 // PASSWORD 在打包时通过文件开头的配置注入；ASSETS 由打包脚本生成
 import tcb from '@cloudbase/node-sdk';
@@ -103,11 +103,11 @@ function defaultWords() {
 
 const env = { store, password: PASSWORD, loadDefaultWords: async () => defaultWords() };
 
-const reply = (statusCode, contentType, body, extra) => ({
+const reply = (statusCode, contentType, body, extra, base64) => ({
   statusCode,
   headers: Object.assign({ 'content-type': contentType, 'cache-control': 'no-store' }, extra),
   body,
-  isBase64Encoded: false,
+  isBase64Encoded: !!base64,
 });
 
 // 打包为 CommonJS 后即 exports.main，执行方法填 index.main
@@ -134,7 +134,7 @@ export async function main(event) {
   // 网页文件：按路径最后一段匹配，路径透传开或关都能用
   const name = path.split('/').pop() || 'index.html';
   const file = ASSETS[name];
-  if (file && (method === 'GET' || method === 'HEAD')) return reply(200, file.type, method === 'HEAD' ? '' : file.body, { 'cache-control': 'no-cache' });
+  if (file && (method === 'GET' || method === 'HEAD')) return reply(200, file.type, method === 'HEAD' ? '' : file.body, { 'cache-control': 'no-cache' }, file.base64 && method === 'GET');
   if (!path.split('/').pop() || !name.includes('.')) {
     // 目录形式的地址（如 /、/spell/）返回练习页
     return reply(200, ASSETS['index.html'].type, ASSETS['index.html'].body, { 'cache-control': 'no-cache' });

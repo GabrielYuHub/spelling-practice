@@ -1,0 +1,22 @@
+# 每次推送或提交 PR 时，自动运行 函数源码/test/ 里的测试
+name: 自动化测试
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: 函数源码
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: 函数源码/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm test

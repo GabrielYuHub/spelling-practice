@@ -8,6 +8,9 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="单词拼写">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#2b6cb0">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>单词拼写练习</title>
 <style>
   :root {
@@ -176,6 +179,12 @@
   }
   .pick-msg { color: var(--red); font-size: 18px; min-height: 1.4em; }
   .retry-btn { border: none; background: var(--blue-soft); color: var(--blue); font: inherit; font-size: 17px; padding: 6px 18px; border-radius: 999px; cursor: pointer; margin: -4px 0 8px; }
+  /* 离线提示条 */
+  .offline-bar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 30; text-align: center; font-size: 15px; line-height: 28px;
+    background: #fff3cd; color: #7a5b00; box-shadow: 0 1px 4px rgba(0,0,0,.08); font-family: "PingFang SC", sans-serif;
+  }
+  body.is-offline { padding-top: 28px; }
   /* 练习前的单词列表页 */
   .preview { width: 100%; max-width: 820px; }
   .preview-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 4px 0 14px; }
@@ -211,6 +220,7 @@
   .card:disabled { opacity: .5; cursor: default; transform: none; }
   .card.review { background: #e8f3ff; }
   .card.wrong { background: #fdeeee; }
+  .card.new { background: #f3f0ff; }
   /* 每日打卡 */
   .checkin {
     display: flex; align-items: center; gap: 14px; width: min(560px, 100%); margin: -6px auto 14px; padding: 10px 16px;
@@ -303,6 +313,7 @@
 </style>
 </head>
 <body>
+<div class="offline-bar" id="offlineBar" hidden>📴 离线练习中，答题记录会在联网后自动上传</div>
 <div class="app">
   <div class="header">
     <button class="chip placeholder" id="childChip" title="切换孩子"></button>
@@ -487,47 +498,12 @@
     }
   }
 
-  // ---------- 挖空规则 ----------
-  // 单个单词：字母数 ≤2 空 1 个；否则空 2 个，其中至少 1 个元音（无 aeiou 时用 y，再没有就随机）
-  // 短语/句子（含空格）：约每 4 个字母空 1 个，最少 2 个、最多 8 个，至少一半是元音，尽量不相邻
-  const isVowel = c => 'aeiou'.includes(c.toLowerCase());
-  function pickSpread(pool, k, chosen) {
-    const near = i => chosen.some(j => Math.abs(i - j) <= 1);
-    const order = shuffle(pool.filter(i => !chosen.includes(i)));
-    for (const i of order) if (k > 0 && !near(i)) { chosen.push(i); k--; }
-    for (const i of order) if (k > 0 && !chosen.includes(i)) { chosen.push(i); k--; }
-  }
-  // fixed：单词表里加了 * 的词（人名、地名等）的字母位置，不挖空
-  const letterIdx = (word, fixed) => [...word].map((c, i) => isLetter(c) && !(fixed && fixed.includes(i)) ? i : -1).filter(i => i >= 0);
-  // 挖 n 个空：至少一半是元音，尽量不相邻
-  function pickN(word, letters, n) {
-    let vowels = letters.filter(i => isVowel(word[i]));
-    if (!vowels.length) vowels = letters.filter(i => word[i].toLowerCase() === 'y');
-    const chosen = [];
-    pickSpread(vowels, Math.ceil(n / 2), chosen);
-    pickSpread(letters, n - chosen.length, chosen);
-    return chosen.sort((a, b) => a - b);
-  }
-  function pickBlanks(word, letters) {
-    if (letters.length <= 2) return [pick(letters)];
-    if (word.includes(' ')) return pickN(word, letters, Math.min(8, Math.max(2, Math.round(letters.length / 4))));
-    let vowels = letters.filter(i => isVowel(word[i]));
-    if (!vowels.length) vowels = letters.filter(i => word[i].toLowerCase() === 'y');
-    const first = vowels.length ? pick(vowels) : pick(letters);
-    const second = pick(letters.filter(i => i !== first));
-    return [first, second].sort((a, b) => a - b);
-  }
+  // ---------- 挖空规则：见 wordlib.js（WordLib.blanksFor，有自动化测试） ----------
 
   // 难度：easy 简单（上面的规则）/ medium 进阶（挖一半字母）/ dictation 听写（全部字母）
   // auto 自动：按熟练度决定——还不熟用简单，答对 2 次以上且最近没错用进阶，答对 4 次以上用听写
   const LEVELS = [['auto', '自动'], ['easy', '简单'], ['medium', '进阶'], ['dictation', '听写']];
   const levelName = id => (LEVELS.find(l => l[0] === id) || LEVELS[0])[1];
-  function blanksFor(word, lv, fixed) {
-    const letters = letterIdx(word, fixed);
-    if (lv === 'dictation') return letters;
-    if (lv === 'medium') return letters.length <= 2 ? [pick(letters)] : pickN(word, letters, Math.ceil(letters.length / 2));
-    return pickBlanks(word, letters);
-  }
 
   // ---------- 音效（Web Audio 合成） ----------
   let actx = null;
@@ -623,6 +599,19 @@
 
   // 一轮：词数不超过每轮题数时全出；否则按熟练度加权抽取（错得多的更容易被抽到）
   // 熟练度分数 ≥4 的词在一轮里出现 2 次，≥8 出现 3 次
+  // 学新词：按孩子的“每天题量”和“每天新词上限”算今天学几个、学哪几个（规则见 wordlib.js）
+  function newPlan() {
+    const c = S.session && S.config && S.config.children.find(x => x.id === S.session.child);
+    return WordLib.planNewWords(S.pool, S.stats, { target: (c && c.daily) || 30, cap: c && c.newCap != null ? c.newCap : 5 });
+  }
+  const NEW_STATUS = {
+    ready: n => '今天学 ' + n + ' 个新词',
+    'review-first': () => '先完成今日复习',
+    'today-done': () => '今天的新词学完啦 🎉',
+    'review-only': () => '今天复习已够量，只复习',
+    'all-done': () => '新词都学完啦',
+    paused: () => '暂停学新词',
+  };
   // 每轮题数：孩子的设置（管理页“孩子”里设置，所有单词表通用），默认 20
   function roundOf() {
     const c = S.session && S.config && S.config.children.find(x => x.id === S.session.child);
@@ -701,7 +690,7 @@
     S.cur = S.queue.shift();
     const w = S.words[S.cur];
     S.lv = levelOf(w);
-    S.blanks = blanksFor(w.en, S.lv, w.fixed);
+    S.blanks = WordLib.blanksFor(w.en, S.lv, w.fixed);
     S.filled = S.blanks.map(() => null);
     S.wrongThisWord = false;
     S.solved = false;
@@ -721,11 +710,7 @@
 
   function levelOf(w) {
     if (S.level !== 'auto') return S.level;
-    const st = S.stats[w.en] || {};
-    if (st.score) return 'easy';
-    if ((st.right || 0) >= 4) return 'dictation';
-    if ((st.right || 0) >= 2) return 'medium';
-    return 'easy';
+    return WordLib.autoLevel(S.stats[w.en]);
   }
 
   function renderWord(reveal = false) {
@@ -795,15 +780,19 @@
 
   // ---------- 判题 ----------
   // noScore：同一道题第 3 次及以后的答错，只记次数、不再加熟练度分数（每题最多 +4）
-  function recordAnswer(en, ok, noScore) {
+  // noScore：本题第 3 次及以后的答错（不再加分）；repeat：本题第 2 次及以后的答错（不再退级）
+  function recordAnswer(en, ok, noScore, repeat) {
     const r = S.round;
     const at = new Date().toISOString();
-    r.events.push(noScore ? { en, ok, at, ns: true } : { en, ok, at });
+    const ev = { en, ok, at };
+    if (noScore) ev.ns = true;
+    if (repeat) ev.rp = true;
+    r.events.push(ev);
     r.lastActive = Date.now();
     if (ok) r.correct++;
     else { r.wrong++; r.wrongWords[en] = (r.wrongWords[en] || 0) + 1; }
     // 本地同步更新熟练度和复习计划（规则与服务器相同，见 wordlib.js），下一轮马上生效
-    WordLib.applyAnswer(S.stats[en] || (S.stats[en] = { score: 0, wrong: 0, right: 0 }), ok, at, noScore);
+    WordLib.applyAnswer(S.stats[en] || (S.stats[en] = { score: 0, wrong: 0, right: 0 }), ok, at, noScore, repeat);
     if (ok && S.online && S.session) {
       const today = WordLib.bjDate(at);
       S.days[today] = (S.days[today] || 0) + 1;
@@ -843,7 +832,7 @@
     S.busy = true;
     $('submitBtn').disabled = true;
     if (!ok) S.tries++;
-    recordAnswer(w, ok, !ok && S.tries > 2);
+    recordAnswer(w, ok, !ok && S.tries > 2, !ok && S.tries > 1);
     if (ok) {
       S.correct++;
       S.solved = true;
@@ -997,6 +986,7 @@
     return flushPromise;
   }
   async function doFlush(keepalive) {
+    if (S.offline) return; // 离线练习中：联网后由 tryReconnect 统一补传
     try {
       for (;;) {
         const q = ls.get(QUEUE_KEY, []);
@@ -1112,6 +1102,7 @@
   }
   // 每个孩子的进度：先显示卡片，再补上进度（读取失败就不显示）
   async function loadProgress() {
+    if (S.offline) { document.querySelectorAll('.prog').forEach(el => { el.hidden = true; }); return; }
     try {
       await flushQueue(false); // 先把刚才那一轮发出去，进度才是最新的
       const d = await api('GET', '?op=progress');
@@ -1145,26 +1136,89 @@
     return allowed ? S.config.lists.filter(l => allowed.includes(l.group || '其他')) : S.config.lists;
   }
 
+  // ---------- 离线使用（T1） ----------
+  // 每次在线进入选单词表界面时，把配置、这个孩子能练的单词表和熟练度存到本机（localStorage）；
+  // 连不上服务器时用这份数据照常练习，答题记录排队，联网后自动上传
+  const OFF_KEY = child => 'spell_offline_' + child;
+  S.offline = false;
+  S.texts = {}; // 单词表编号 → 内容（离线时从本机数据取）
+  function saveOffline(cfg, all, st) {
+    const mine = new Set(myLists().map(l => l.id));
+    const lists = {};
+    all.lists.filter(l => mine.has(l.id)).forEach(l => { lists[l.id] = l.text; });
+    ls.set(OFF_KEY(S.session.child), { config: cfg, lists, stats: { words: (st && st.words) || {}, days: (st && st.days) || {} }, savedAt: new Date().toISOString() });
+  }
+  const loadOffline = child => { const d = ls.get(OFF_KEY(child), null); return d && d.config && d.lists ? d : null; };
+  // 连不上服务器（不是密码、参数这类错误），而且本机有数据时，切换到离线练习
+  const canGoOffline = e => !(e instanceof ApiError) && S.session && !!loadOffline(S.session.child);
+  let reconnectTimer = null;
+  function goOffline() {
+    S.offline = true;
+    show('offlineBar', true);
+    document.body.classList.add('is-offline');
+    clearInterval(reconnectTimer);
+    reconnectTimer = setInterval(tryReconnect, 20000);
+  }
+  let reconnecting = false;
+  async function tryReconnect() {
+    if (!S.offline || reconnecting) return;
+    reconnecting = true;
+    try {
+      const cfg = await api('GET', '?op=config', null, { timeout: 5000 });
+      S.offline = false;
+      clearInterval(reconnectTimer);
+      show('offlineBar', false);
+      document.body.classList.remove('is-offline');
+      S.config = cfg;
+      await flushQueue(false); // 补传离线时的答题记录
+      // 刷新本机数据，下次离线时也是最新的
+      const [all, st] = await Promise.all([api('GET', '?op=alltext'), api('GET', '?op=stats&child=' + encodeURIComponent(S.session.child))]);
+      saveOffline(cfg, all, st);
+    } catch (e) { /* 还是连不上：下次再试 */ } finally { reconnecting = false; }
+  }
+  window.addEventListener('online', () => setTimeout(tryReconnect, 1000));
+  // 还没发出去的记录（比如网络不好、离线练习）：在服务器数据上补算，保证进度、复习和错词不会“倒退”
+  function replayQueue(stats, days) {
+    ls.get(QUEUE_KEY, []).filter(x => x.child === S.session.child).forEach(x => (x.record.events || []).forEach(ev => {
+      WordLib.applyAnswer(stats[ev.en] || (stats[ev.en] = { score: 0, wrong: 0, right: 0 }), ev.ok, ev.at, !!ev.ns, !!ev.rp);
+      if (days && ev.ok) { const d = WordLib.bjDate(ev.at); days[d] = (days[d] || 0) + 1; }
+    }));
+  }
+
   async function loadPoolAndStats() {
-    await flushQueue(false); // 先把刚才离开的那一轮发出去，服务器的数据才是最新的
-    const [cfg, all, st] = await Promise.all([
-      api('GET', '?op=config'),
-      api('GET', '?op=alltext'),
-      api('GET', '?op=stats&child=' + encodeURIComponent(S.session.child)),
-    ]);
+    let cfg, all, st;
+    if (!S.offline) {
+      try {
+        await flushQueue(false); // 先把刚才离开的那一轮发出去，服务器的数据才是最新的
+        [cfg, all, st] = await Promise.all([
+          api('GET', '?op=config'),
+          api('GET', '?op=alltext'),
+          api('GET', '?op=stats&child=' + encodeURIComponent(S.session.child)),
+        ]);
+        S.config = cfg;
+        saveOffline(cfg, all, st);
+      } catch (e) {
+        if (!canGoOffline(e)) throw e;
+        goOffline();
+      }
+    }
+    if (S.offline) {
+      const d = loadOffline(S.session.child);
+      cfg = d.config;
+      all = { lists: Object.entries(d.lists).map(([id, text]) => ({ id, text })) };
+      st = JSON.parse(JSON.stringify(d.stats));
+    }
     S.config = cfg;
+    S.texts = {};
+    all.lists.forEach(l => { S.texts[l.id] = l.text; });
     const seen = new Set();
     S.pool = [];
     // 今日复习 / 错词本只从这个孩子能用的单词表里挑词
-    const mine = new Set(myLists().map(l => l.id));
-    all.lists.filter(l => mine.has(l.id)).forEach(l => WordLib.parse(l.text).forEach(w => { if (!seen.has(w.en)) { seen.add(w.en); S.pool.push(w); } }));
+    // 按管理页的顺序（先分组，再组里的单词表，再表里每行）：学新词按这个顺序出词
+    orderedMyLists().forEach(l => WordLib.parse(S.texts[l.id] || '').forEach(w => { if (!seen.has(w.en)) { seen.add(w.en); S.pool.push(w); } }));
     S.stats = (st && st.words) || {};
     S.days = (st && st.days) || {};
-    // 还没发出去的记录（比如网络不好）：在服务器数据上补算，保证进度、复习和错词不会“倒退”
-    ls.get(QUEUE_KEY, []).filter(x => x.child === S.session.child).forEach(x => (x.record.events || []).forEach(ev => {
-      WordLib.applyAnswer(S.stats[ev.en] || (S.stats[ev.en] = { score: 0, wrong: 0, right: 0 }), ev.ok, ev.at);
-      if (ev.ok) { const d = WordLib.bjDate(ev.at); S.days[d] = (S.days[d] || 0) + 1; }
-    }));
+    replayQueue(S.stats, S.days);
   }
 
   async function showListPicker(msg, good) {
@@ -1218,6 +1272,9 @@
     myLists().forEach(l => { const g = groupName(l); if (!gs.includes(g)) gs.push(g); });
     return gs.filter(g => g !== '其他').concat(gs.includes('其他') ? ['其他'] : []);
   }
+  // 孩子能练的单词表，按管理页的顺序：分组顺序（“其他”最后），组里按单词表顺序
+  const orderedMyLists = () => listGroups().flatMap(g => myLists().filter(l => groupName(l) === g));
+
   function renderListCards() {
     const last = ls.get('spell_last_list', '');
     const groups = listGroups();
@@ -1238,9 +1295,11 @@
     show('groupBar', groups.length > 1);
     const lists = groups.length > 1 ? myLists().filter(l => groupName(l) === cur) : myLists();
     const due = reviewWords().length, wrong = wrongWords().length;
+    const plan = newPlan();
     const msg = $('pickMsg').textContent, msgCls = $('pickMsg').className;
     renderCards('选一个单词表', [
       { icon: '📅', name: '今日复习', sub: due ? due + ' 个单词' : '今天没有要复习的', cls: 'review', disabled: !due, onClick: () => startVirtual('review') },
+      { icon: '✨', name: '学新词', sub: NEW_STATUS[plan.status](plan.quota), cls: 'new', disabled: plan.status !== 'ready', onClick: () => startVirtual('new') },
       { icon: '📕', name: '错词本', sub: wrong ? wrong + ' 个错词' : '暂无错词', cls: 'wrong', disabled: !wrong, onClick: () => startVirtual('wrong') },
     ].concat(lists.map(l => ({
       icon: '📚', name: l.name, sub: l.count + ' 个单词', last: l.id === last,
@@ -1304,14 +1363,29 @@
   async function startList(list) {
     overlay('loadingOverlay', true);
     try {
-      const [d, st] = await Promise.all([
-        api('GET', '?op=list&id=' + encodeURIComponent(list.id)),
-        api('GET', '?op=stats&child=' + encodeURIComponent(S.session.child)),
-      ]);
-      const text = d.text != null ? d.text : (typeof WORDS === 'string' ? WORDS : '');
+      let text = null, stats = null;
+      if (!S.offline) {
+        try {
+          const [d, st] = await Promise.all([
+            api('GET', '?op=list&id=' + encodeURIComponent(list.id)),
+            api('GET', '?op=stats&child=' + encodeURIComponent(S.session.child)),
+          ]);
+          text = d.text != null ? d.text : (typeof WORDS === 'string' ? WORDS : '');
+          stats = (st && st.words) || {};
+          replayQueue(stats);
+        } catch (e) {
+          if (!canGoOffline(e)) throw e;
+          goOffline();
+        }
+      }
+      if (S.offline) { // 离线：用本机数据；熟练度用选表时已经补算过排队记录的那份
+        text = S.texts[list.id];
+        stats = S.stats;
+        if (text == null) throw new Error('这个单词表还没有保存到这台设备上，联网后再试');
+      }
       const words = WordLib.parse(text);
       if (!words.length) throw new Error('这个单词表是空的');
-      S.list = list; S.words = words; S.stats = (st && st.words) || {};
+      S.list = list; S.words = words; S.stats = stats;
       ls.set('spell_last_list', list.id);
       updateChips();
       showPreview(list.name + '（' + words.length + ' 个单词）', words.length > roundOf()
@@ -1325,12 +1399,18 @@
   }
 
   // 今日复习 / 错词本（虚拟单词表，每轮最多取孩子的“每轮题数”个，按优先顺序取）
-  const VIRTUAL = { review: { id: 'x_review', name: '今日复习', pick: reviewWords }, wrong: { id: 'x_wrong', name: '错词本', pick: wrongWords } };
+  const VIRTUAL = {
+    review: { id: 'x_review', name: '今日复习', pick: reviewWords, sub: '这些单词今天该复习了' },
+    new: { id: 'x_new', name: '学新词', pick: () => newPlan().words, sub: '先看一遍新词的意思，听听读音，再开始练习' },
+    wrong: { id: 'x_wrong', name: '错词本', pick: wrongWords, sub: '这些单词最近容易错，多练几遍' },
+  };
+  const NEW_EMPTY = { 'review-first': '先完成今日复习，再学新词', 'today-done': '🎉 今天的新词学完啦！', 'review-only': '今天复习已经够量了，明天再学新词', 'all-done': '🎉 新词都学完啦！', paused: '学新词已暂停' };
   // direct：本轮结束后点“再来一轮”时直接开始，不再显示列表
   function startVirtual(kind, direct) {
     const v = VIRTUAL[kind];
     const words = v.pick().slice(0, roundOf());
     if (!words.length) {
+      if (kind === 'new') { const st = newPlan().status; showListPicker(NEW_EMPTY[st] || '', st === 'today-done' || st === 'all-done'); return; }
       showListPicker(kind === 'review' ? '🎉 今天的复习都完成啦！' : '🎉 错词都练好啦！', true);
       return;
     }
@@ -1338,7 +1418,7 @@
     S.words = words;
     updateChips();
     if (direct) { showView('game'); startRound(); return; }
-    showPreview(v.name + '（' + words.length + ' 个单词）', kind === 'review' ? '这些单词今天该复习了' : '这些单词最近容易错，多练几遍');
+    showPreview(v.name + '（' + words.length + ' 个单词）', v.sub);
   }
 
   // ---------- 单词列表页 ----------
@@ -1480,6 +1560,11 @@
   });
   $('childChip').addEventListener('click', () => {
     if (!S.online || !S.session || S.busy) return;
+    if (S.offline) {
+      showFeedback('bad', '📴', '离线时不能换小朋友<br><small style="font-size:.6em">联网后再试</small>');
+      setTimeout(hideFeedback, 1600);
+      return;
+    }
     if (!confirm('要换成其他小朋友吗？')) return;
     saveProgress();
     S.round = null;
@@ -1510,11 +1595,23 @@
     updateSpeakChip();
     buildPinpad();
     overlay('loadingOverlay', true);
+    // 本机记住的孩子如果有离线数据，连不上服务器时可以直接离线练习（等待时间也短一些）
+    const savedSession = ls.get('spell_session', null);
+    const cached = savedSession && loadOffline(savedSession.child);
     try {
-      S.config = await api('GET', '?op=config');
+      S.config = await api('GET', '?op=config', null, cached ? { timeout: 6000 } : {});
       S.online = true;
     } catch (e) {
+      const child = cached && !(e instanceof ApiError) && cached.config.children.find(c => c.id === savedSession.child);
       overlay('loadingOverlay', false);
+      if (child) {
+        S.online = true;
+        S.config = cached.config;
+        S.session = { child: child.id, pin: savedSession.pin, name: child.name };
+        goOffline();
+        showListPicker();
+        return;
+      }
       startOffline(typeof WORDS === 'string' ? WORDS : '');
       return;
     }
@@ -1538,6 +1635,11 @@
     overlay('loadingOverlay', false);
     if (S.session) showListPicker();
     else showChildPicker();
+  }
+
+  // 离线缓存网页文件（sw.js）；只在 https 或本机测试时可用
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
   }
 
   init();

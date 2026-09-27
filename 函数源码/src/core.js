@@ -24,7 +24,7 @@ const LEGACY_KEY = 'wordlists/default.txt'; // 旧版“在线编辑词库”的
 const DEFAULT_LIST_ID = 'l_default';
 const MAX_TEXT = 200000;
 // 虚拟单词表：由练习页从所有单词表中挑词组成，只用于答题记录
-const VIRTUAL_LISTS = { x_review: '今日复习', x_wrong: '错词本' };
+const VIRTUAL_LISTS = { x_review: '今日复习', x_wrong: '错词本', x_new: '学新词' };
 
 const LOCKS_KEY = 'locks.json';   // 口令连续输错的次数与锁定时间
 const AUTH_KEY = 'auth.json';     // 在管理页修改过的密码（加盐哈希）；删除这条数据即恢复为代码里的原始密码
@@ -108,11 +108,14 @@ const cleanGroups = gs => (Array.isArray(gs) ? [...new Set(gs.map(g => cleanGrou
 const DEFAULT_GOAL = 20;
 const DEFAULT_TRIES = 6; // 同一道题最多答错几次后显示正确答案
 const DEFAULT_ROUND = 20; // 每轮题数（每个孩子一个设置，所有单词表通用）
+const DEFAULT_DAILY = 30; // 学新词：每天题量（复习 + 新词）
+const DEFAULT_NEWCAP = 5; // 学新词：每天新词上限（0 = 暂停学新词）
 const DAYS_KEEP = 400; // 每日答对数保留的天数
 
 function publicConfig(cfg) {
   return {
-    children: cfg.children.map(({ id, name, goal, tries, round, groups }) => ({ id, name, goal: goal || DEFAULT_GOAL, tries: tries || DEFAULT_TRIES, round: round || DEFAULT_ROUND, groups: cleanGroups(groups) })),
+    children: cfg.children.map(({ id, name, goal, tries, round, daily, newCap, groups }) => ({ id, name, goal: goal || DEFAULT_GOAL, tries: tries || DEFAULT_TRIES, round: round || DEFAULT_ROUND,
+      daily: daily || DEFAULT_DAILY, newCap: newCap == null ? DEFAULT_NEWCAP : newCap, groups: cleanGroups(groups) })),
     lists: cfg.lists.map(l => ({ id: l.id, name: l.name, roundSize: l.roundSize, count: l.count, group: listGroup(l) })),
   };
 }
@@ -208,7 +211,7 @@ async function saveRecord(s, cfg, body) {
         if (!en) continue;
         const w = st.words[en] || (st.words[en] = { score: 0, wrong: 0, right: 0, lastWrong: null });
         const at = typeof ev.at === 'string' && !isNaN(Date.parse(ev.at)) ? ev.at.slice(0, 40) : now;
-        WordLib.applyAnswer(w, !!ev.ok, at, !!ev.ns); // 熟练度 + 间隔复习，规则见 wordlib.js；ns：本题第 3 次及以后的答错，不再加分
+        WordLib.applyAnswer(w, !!ev.ok, at, !!ev.ns, !!ev.rp); // 熟练度 + 间隔复习，规则见 wordlib.js；ns：本题第 3 次及以后的答错，不再加分；rp：本题第 2 次及以后的答错，不再退级
         if (ev.ok) addDayCount(st, WordLib.bjDate(at), 1);
       }
       st.updated = now;
@@ -316,6 +319,7 @@ function cleanStat(w) {
     lastWrong: typeof w.lastWrong === 'string' ? w.lastWrong.slice(0, 40) : null };
   if (w.lvl) { out.lvl = int(w.lvl, 1, 6, 1); out.due = /^\d{4}-\d{2}-\d{2}$/.test(w.due) ? w.due : null; }
   if (w.mastered) out.mastered = true;
+  for (const k of ['first', 'last']) if (/^\d{4}-\d{2}-\d{2}$/.test(w[k] || '')) out[k] = w[k];
   return out;
 }
 
@@ -464,7 +468,8 @@ async function admin(s, env, body) {
       if (!/^\d{4}$/.test(pin)) bad(name + ' 的 PIN 必须是 4 位数字');
       const id = c.id && cfg.children.some(o => o.id === c.id) ? c.id : newId('c');
       const old = cfg.children.find(o => o.id === id);
-      return { id, name, pin, goal: int(c.goal, 1, 500, (old && old.goal) || DEFAULT_GOAL), tries: int(c.tries, 1, 10, (old && old.tries) || DEFAULT_TRIES), round: int(c.round, 1, 100, (old && old.round) || DEFAULT_ROUND), groups: cleanGroups(c.groups) };
+      return { id, name, pin, goal: int(c.goal, 1, 500, (old && old.goal) || DEFAULT_GOAL), tries: int(c.tries, 1, 10, (old && old.tries) || DEFAULT_TRIES), round: int(c.round, 1, 100, (old && old.round) || DEFAULT_ROUND),
+        daily: int(c.daily, 10, 200, (old && old.daily) || DEFAULT_DAILY), newCap: int(c.newCap, 0, 50, old && old.newCap != null ? old.newCap : DEFAULT_NEWCAP), groups: cleanGroups(c.groups) };
     });
     const removed = cfg.children.filter(o => !children.some(c => c.id === o.id));
     // 修改了 PIN 或被删除的孩子，解除锁定
@@ -551,7 +556,8 @@ async function admin(s, env, body) {
         if (!t) {
           if (cfg.children.length >= 20) { sum.skipped.push(name + '：孩子已达 20 个上限'); continue; }
           const id = typeof c.id === 'string' && ID_RE.test(c.id) && !cfg.children.some(x => x.id === c.id) ? c.id : newId('c');
-          t = { id, name, pin, goal: int(c.goal, 1, 500, DEFAULT_GOAL), tries: int(c.tries, 1, 10, DEFAULT_TRIES), round: int(c.round, 1, 100, DEFAULT_ROUND), groups: cleanGroups(c.groups) };
+          t = { id, name, pin, goal: int(c.goal, 1, 500, DEFAULT_GOAL), tries: int(c.tries, 1, 10, DEFAULT_TRIES), round: int(c.round, 1, 100, DEFAULT_ROUND),
+            daily: int(c.daily, 10, 200, DEFAULT_DAILY), newCap: int(c.newCap, 0, 50, DEFAULT_NEWCAP), groups: cleanGroups(c.groups) };
           cfg.children.push(t);
           sum.childrenAdded++;
         } else {
@@ -560,6 +566,8 @@ async function admin(s, env, body) {
           if (c.goal !== undefined) t.goal = int(c.goal, 1, 500, t.goal || DEFAULT_GOAL);
           if (c.tries !== undefined) t.tries = int(c.tries, 1, 10, t.tries || DEFAULT_TRIES);
           if (c.round !== undefined) t.round = int(c.round, 1, 100, t.round || DEFAULT_ROUND);
+          if (c.daily !== undefined) t.daily = int(c.daily, 10, 200, t.daily || DEFAULT_DAILY);
+          if (c.newCap !== undefined) t.newCap = int(c.newCap, 0, 50, t.newCap != null ? t.newCap : DEFAULT_NEWCAP);
           if (c.groups !== undefined) t.groups = cleanGroups(c.groups);
           sum.childrenUpdated++;
         }
@@ -645,8 +653,11 @@ async function admin(s, env, body) {
       const l = byList[r.list] || (byList[r.list] = { id: r.list, name: cur ? cur.name : (VIRTUAL_LISTS[r.list] || r.listName || r.list), answered: 0, correct: 0 });
       l.answered += answered; l.correct += r.correct || 0;
     }
-    // 复习概况：只统计现有单词表里的单词（与练习页的计算一致）
-    const texts = await inBatches(cfg.lists, 10, l => s.get(listKey(l.id)));
+    // 复习概况：只统计这个孩子能练的单词表（按分组分配）里的单词，与练习页“今日复习”的计算一致
+    const kid = cfg.children.find(c => c.id === childId);
+    const allowed = kid && Array.isArray(kid.groups) ? kid.groups : null;
+    const myLists = allowed ? cfg.lists.filter(l => allowed.includes(listKeyGroup(l) || '其他')) : cfg.lists;
+    const texts = await inBatches(myLists, 10, l => s.get(listKey(l.id)));
     const pool = new Set();
     texts.forEach(t => WordLib.parse(t || '').forEach(w => pool.add(w.en)));
     const stAll = await readStats(s, childId);

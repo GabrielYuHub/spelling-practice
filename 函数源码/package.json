@@ -1,11 +1,14 @@
 {
   "name": "spelling-functions",
   "private": true,
-  "description": "单词拼写练习云函数的打包工具（运行 ./build.sh）",
+  "description": "单词拼写练习云函数的打包工具和自动化测试（./build.sh 打包，npm test 测试）",
   "dependencies": {
     "@cloudbase/node-sdk": "3.18.3"
   },
   "devDependencies": {
     "esbuild": "0.25.12"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js"
   }
 }
