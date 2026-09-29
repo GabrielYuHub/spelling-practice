@@ -33,21 +33,26 @@ await ev(`[...document.querySelectorAll('#cards .card')].find(c => c.innerText.i
 await sleep(600); await shot('kid-pin');
 // ③ 选表页（小明）
 await ev(`for (const k of '34') document.dispatchEvent(new KeyboardEvent('keydown',{key:k,bubbles:true}));`); await sleep(2500);
-await shot('kid-pick');
+await shot('kid-pick', await rect("document.getElementById('pickView')", 1400));
+// ③-2 学单词：列表、翻卡片（小明，课本三上）
+await ev(noSpeech + `[...document.querySelectorAll('#cards .card')].find(c => c.innerText.includes('课本三上')).click();`); await sleep(800);
+await shot('kid-study-list');
+await ev(`document.querySelector('#studyModes button[data-m=card]').click(); await new Promise(r=>setTimeout(r,200)); document.getElementById('fcNext').click(); await new Promise(r=>setTimeout(r,200)); document.getElementById('flash').click();`); await sleep(1000);
+await shot('kid-study-card');
 // ④ 学新词单词列表（小红） ⑤ 答题 ⑥ 例句
 await ev(`localStorage.setItem('spell_session', JSON.stringify({child:${JSON.stringify(hong)},pin:'5678',name:'小红'}))`);
 await go(B, 2500);
 await ev(noSpeech + `[...document.querySelectorAll('#cards .card')].find(c => c.innerText.includes('学新词')).click();`); await sleep(1200);
 await shot('kid-preview');
-await ev(noSpeech + `document.getElementById('startBtn').click();`); await sleep(1200);
+await ev(noSpeech + `document.getElementById('studyStart').click();`); await sleep(1200);
 await ev(`const w=window.__last, chs=[...document.querySelectorAll('#word .ch')]; const slots=chs.map((c,i)=>c.classList.contains('slot')?i:-1).filter(i=>i>=0); document.dispatchEvent(new KeyboardEvent('keydown',{key:w[slots[0]],bubbles:true}));`);
 await sleep(500); await shot('kid-game');
 await ev(`const w=window.__last, chs=[...document.querySelectorAll('#word .ch')]; chs.forEach((c,i)=>{ if (c.classList.contains('slot') && c.textContent.trim()==='' ) document.dispatchEvent(new KeyboardEvent('keydown',{key:w[i],bubbles:true})); }); document.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));`);
 await sleep(2000); await shot('kid-example');
 // ⑦ 答错后的提示
 await sleep(2500);
-await ev(`const w=window.__last, chs=[...document.querySelectorAll('#word .ch')]; chs.forEach((c,i)=>{ if (c.classList.contains('slot')) document.dispatchEvent(new KeyboardEvent('keydown',{key: w[i]==='z'?'x':'z',bubbles:true})); }); document.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));`);
-await sleep(300); await shot('kid-wrong');
+await ev(`const w=window.__last, chs=[...document.querySelectorAll('#word .ch')]; let k=0; chs.forEach((c,i)=>{ if (c.classList.contains('slot')) document.dispatchEvent(new KeyboardEvent('keydown',{key: k++===0 ? w[i] : (w[i]==='z'?'x':'z'),bubbles:true})); }); document.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));`);
+await sleep(1500); await shot('kid-wrong'); // 答错后：填对的保留，填错的标红，出现“看答案”
 
 // 管理页
 await go(B + 'editor.html', 1200);

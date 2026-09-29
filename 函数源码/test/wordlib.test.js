@@ -98,6 +98,20 @@ test('挖空：* 标记的字母在任何难度都不挖', () => {
   });
 });
 
+test('挖空上限：简单和进阶最多挖 maxBlanks 个，听写不限', () => {
+  const s = 'Walk straight for 200 meters, then turn left.';
+  repeat(100, () => {
+    assert.equal(W.blanksFor(s, 'medium', null, 4).length, 4);
+    assert.equal(W.blanksFor(s, 'easy', null, 3).length, 3);
+    assert.equal(W.blanksFor(s, 'easy', null, 30).length, 8, '简单难度本来最多 8 个');
+    assert.equal(W.blanksFor(s, 'dictation', null, 2).length, letters(s).length);
+    const one = W.blanksFor('school', 'easy', null, 1);
+    assert.equal(one.length, 1);
+    assert.ok('aeiou'.includes('school'[one[0]]), '只挖 1 个时挖元音');
+    assert.equal(W.blanksFor('school', 'easy').length, 2, '不设上限时和原来一样');
+  });
+});
+
 test('自动难度：按熟练度选择', () => {
   assert.equal(W.autoLevel(undefined), 'easy');
   assert.equal(W.autoLevel({ right: 1 }), 'easy');

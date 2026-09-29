@@ -9,7 +9,7 @@ test('首次访问自动初始化：默认孩子和默认单词表', async () =>
   const api = fresh();
   const { status, data } = await api.get('config');
   assert.equal(status, 200);
-  assert.deepEqual(data.children, [{ id: 'c_default', name: '小朋友', goal: 20, tries: 6, round: 20, daily: 30, newCap: 5, groups: null, level: 'auto', lvMed: 2, lvDict: 4 }]);
+  assert.deepEqual(data.children, [{ id: 'c_default', name: '小朋友', goal: 20, tries: 6, round: 20, daily: 30, newCap: 5, groups: null, level: 'auto', lvMed: 2, lvDict: 4, maxBlanks: 8 }]);
   assert.equal(data.lists[0].id, 'l_default');
   assert.equal(data.lists[0].group, '三上');
   assert.ok(data.lists[0].count > 0);
@@ -83,6 +83,12 @@ test('难度：按孩子保存；孩子切换要验证 PIN；家长可以设置�
   assert.deepEqual([c.level, c.lvMed, c.lvDict], ['medium', 5, 6], '没传难度时保留原来的；听写次数至少比进阶多 1');
   c = (await api.admin('saveChildren', { children: [{ id: 'c_default', name: '小朋友', pin: '0000', level: 'xx' }] })).data.config.children[0];
   assert.equal(c.level, 'auto');
+  c = (await api.admin('saveChildren', { children: [{ id: 'c_default', name: '小朋友', pin: '0000', maxBlanks: 3 }] })).data.config.children[0];
+  assert.equal(c.maxBlanks, 3);
+  c = (await api.admin('saveChildren', { children: [{ id: 'c_default', name: '小朋友', pin: '0000', maxBlanks: 99 }] })).data.config.children[0];
+  assert.equal(c.maxBlanks, 30, '挖空上限 1–30');
+  c = (await api.admin('saveChildren', { children: [{ id: 'c_default', name: '小朋友', pin: '0000' }] })).data.config.children[0];
+  assert.equal(c.maxBlanks, 30, '没传时保留原来的');
 });
 
 test('答题记录：同一题第 3 次及以后的答错不加熟练度分数（ns）', async () => {

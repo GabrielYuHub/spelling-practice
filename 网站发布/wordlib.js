@@ -113,21 +113,24 @@
     pickSpread(letters, n - chosen.length, chosen);
     return chosen.sort((a, b) => a - b);
   }
-  function pickBlanks(word, letters) {
+  function pickBlanks(word, letters, cap) {
     if (letters.length <= 2) return [pick(letters)];
-    if (word.includes(' ')) return pickN(word, letters, Math.min(8, Math.max(2, Math.round(letters.length / 4))));
+    if (word.includes(' ')) return pickN(word, letters, Math.min(cap, 8, Math.max(2, Math.round(letters.length / 4))));
     let vowels = letters.filter(i => isVowel(word[i]));
     if (!vowels.length) vowels = letters.filter(i => word[i].toLowerCase() === 'y');
     const first = vowels.length ? pick(vowels) : pick(letters);
+    if (cap < 2) return [first];
     const second = pick(letters.filter(i => i !== first));
     return [first, second].sort((a, b) => a - b);
   }
   // 返回要挖空的字符位置（升序）
-  function blanksFor(word, lv, fixed) {
+  // maxBlanks：每道题最多挖几个字母（每个孩子可以设置），只对简单和进阶起作用，听写不限
+  function blanksFor(word, lv, fixed, maxBlanks) {
     const letters = letterIdx(word, fixed);
     if (lv === 'dictation') return letters;
-    if (lv === 'medium') return letters.length <= 2 ? [pick(letters)] : pickN(word, letters, Math.ceil(letters.length / 2));
-    return pickBlanks(word, letters);
+    const cap = maxBlanks >= 1 ? maxBlanks : Infinity;
+    if (lv === 'medium') return letters.length <= 2 ? [pick(letters)] : pickN(word, letters, Math.min(cap, Math.ceil(letters.length / 2)));
+    return pickBlanks(word, letters, cap);
   }
   // “自动”难度：还不熟（熟练度分数 > 0）用简单；累计答对 dict 次以上用听写，med 次以上用进阶（默认 2、4，每个孩子可以设置）
   function autoLevel(st, opts) {

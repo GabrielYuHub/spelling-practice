@@ -114,6 +114,7 @@ const DEFAULT_NEWCAP = 5; // 学新词：每天新词上限（0 = 暂停学新�
 // 难度：每个孩子一个；“自动”时累计答对几次升进阶、几次升听写
 const LEVELS = ['auto', 'easy', 'medium', 'dictation'];
 const DEFAULT_LV_MED = 2, DEFAULT_LV_DICT = 4;
+const DEFAULT_MAX_BLANKS = 8; // 每道题最多挖几个字母（简单、进阶；听写不限）
 const cleanLevel = v => (LEVELS.includes(v) ? v : 'auto');
 // 进阶 1–19 次，听写比进阶多（最多 20 次）
 function levelRule(med, dict, old) {
@@ -125,9 +126,9 @@ const DAYS_KEEP = 400; // 每日答对数保留的天数
 
 function publicConfig(cfg) {
   return {
-    children: cfg.children.map(({ id, name, goal, tries, round, daily, newCap, groups, level, lvMed, lvDict }) => ({ id, name, goal: goal || DEFAULT_GOAL, tries: tries || DEFAULT_TRIES, round: round || DEFAULT_ROUND,
+    children: cfg.children.map(({ id, name, goal, tries, round, daily, newCap, groups, level, lvMed, lvDict, maxBlanks }) => ({ id, name, goal: goal || DEFAULT_GOAL, tries: tries || DEFAULT_TRIES, round: round || DEFAULT_ROUND,
       daily: daily || DEFAULT_DAILY, newCap: newCap == null ? DEFAULT_NEWCAP : newCap, groups: cleanGroups(groups),
-      level: cleanLevel(level), lvMed: lvMed || DEFAULT_LV_MED, lvDict: lvDict || DEFAULT_LV_DICT })),
+      level: cleanLevel(level), lvMed: lvMed || DEFAULT_LV_MED, lvDict: lvDict || DEFAULT_LV_DICT, maxBlanks: maxBlanks || DEFAULT_MAX_BLANKS })),
     lists: cfg.lists.map(l => ({ id: l.id, name: l.name, roundSize: l.roundSize, count: l.count, group: listGroup(l) })),
   };
 }
@@ -482,7 +483,8 @@ async function admin(s, env, body) {
       const old = cfg.children.find(o => o.id === id);
       return { id, name, pin, goal: int(c.goal, 1, 500, (old && old.goal) || DEFAULT_GOAL), tries: int(c.tries, 1, 10, (old && old.tries) || DEFAULT_TRIES), round: int(c.round, 1, 100, (old && old.round) || DEFAULT_ROUND),
         daily: int(c.daily, 10, 200, (old && old.daily) || DEFAULT_DAILY), newCap: int(c.newCap, 0, 50, old && old.newCap != null ? old.newCap : DEFAULT_NEWCAP), groups: cleanGroups(c.groups),
-        level: cleanLevel(c.level !== undefined ? c.level : old && old.level), ...levelRule(c.lvMed, c.lvDict, old) };
+        level: cleanLevel(c.level !== undefined ? c.level : old && old.level), ...levelRule(c.lvMed, c.lvDict, old),
+        maxBlanks: int(c.maxBlanks, 1, 30, (old && old.maxBlanks) || DEFAULT_MAX_BLANKS) };
     });
     const removed = cfg.children.filter(o => !children.some(c => c.id === o.id));
     // 修改了 PIN 或被删除的孩子，解除锁定
@@ -571,7 +573,7 @@ async function admin(s, env, body) {
           const id = typeof c.id === 'string' && ID_RE.test(c.id) && !cfg.children.some(x => x.id === c.id) ? c.id : newId('c');
           t = { id, name, pin, goal: int(c.goal, 1, 500, DEFAULT_GOAL), tries: int(c.tries, 1, 10, DEFAULT_TRIES), round: int(c.round, 1, 100, DEFAULT_ROUND),
             daily: int(c.daily, 10, 200, DEFAULT_DAILY), newCap: int(c.newCap, 0, 50, DEFAULT_NEWCAP), groups: cleanGroups(c.groups),
-            level: cleanLevel(c.level), ...levelRule(c.lvMed, c.lvDict) };
+            level: cleanLevel(c.level), ...levelRule(c.lvMed, c.lvDict), maxBlanks: int(c.maxBlanks, 1, 30, DEFAULT_MAX_BLANKS) };
           cfg.children.push(t);
           sum.childrenAdded++;
         } else {
@@ -583,6 +585,7 @@ async function admin(s, env, body) {
           if (c.daily !== undefined) t.daily = int(c.daily, 10, 200, t.daily || DEFAULT_DAILY);
           if (c.newCap !== undefined) t.newCap = int(c.newCap, 0, 50, t.newCap != null ? t.newCap : DEFAULT_NEWCAP);
           if (c.level !== undefined) t.level = cleanLevel(c.level);
+          if (c.maxBlanks !== undefined) t.maxBlanks = int(c.maxBlanks, 1, 30, t.maxBlanks || DEFAULT_MAX_BLANKS);
           if (c.lvMed !== undefined || c.lvDict !== undefined) Object.assign(t, levelRule(c.lvMed, c.lvDict, t));
           if (c.groups !== undefined) t.groups = cleanGroups(c.groups);
           sum.childrenUpdated++;
