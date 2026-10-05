@@ -5,6 +5,7 @@
 //   GET  ?op=list&id=<表id>      单词表内容
 //   GET  ?op=stats&child=<id>    孩子的熟练度与复习计划（出题加权、错词本、今日复习用）
 //   GET  ?op=alltext             全部单词表的内容（错词本、今日复习从所有单词表取词）
+//   GET  ?op=audio&t=<文字>      单词、短语或句子的录音（有道词典的发音，base64 mp3；没有时为 null），第一次取到后存在数据库里
 //   POST { op:'pin', child, pin }            验证孩子 PIN
 //   POST { op:'record', child, pin, record } 提交答题记录并更新熟练度
 //   POST { op:'level', child, pin, level }   孩子在练习页切换难度（按孩子保存）
@@ -15,6 +16,7 @@
 //          可选：update(key, mutate) 条件更新（乐观锁，多设备同时写入不丢数据）；deletePrefix(prefix) 按目录一次删除；listValues(prefix, offset, limit, fromKey) 按键排序、连内容一起分页读取（fromKey：只读键 ≥ 它的）
 //          onlyIfNew 写入时 key 已存在要抛出 code 为 'PRECONDITION_FAILED' 的错误
 //   loadDefaultWords()：返回默认单词表文本（words.js 的内容），用于首次初始化
+//   fetchAudio(text)：可选，去有道取发音，返回 base64 mp3；有道没有这个发音返回 null；网络出错返回 undefined
 //   password：管理密码
 import '../../网站发布/wordlib.js';
 
@@ -36,6 +38,7 @@ const ADMIN_LOCK_MIN = 15;
 const listKey = id => `wordlists/${id}.txt`;
 const statsKey = child => `stats/${child}.json`;
 const recordPrefix = child => `records/${child}/`;
+const audioKey = hash => `audio/${hash}.json`;
 
 class HttpError extends Error {
   constructor(status, message) { super(message); this.status = status; }
@@ -115,6 +118,17 @@ const DEFAULT_NEWCAP = 5; // 学新词：每天新词上限（0 = 暂停学新�
 const LEVELS = ['auto', 'easy', 'medium', 'dictation'];
 const DEFAULT_LV_MED = 2, DEFAULT_LV_DICT = 4;
 const DEFAULT_MAX_BLANKS = 8; // 每道题最多挖几个字母（简单、进阶；听写不限）
+// 朗读语速：慢、中、快三档的播放速度（1 = 录音原速，0.5–1.5）；孩子在练习页选用哪一档
+// 没有录音、用设备自带朗读时，练习页按这个数再乘 0.8
+const DEFAULT_RATES = [0.7, 0.85, 1];
+const OLD_DEFAULT_RATES = '0.55,0.7,0.85'; // 改成录音之前的默认值（设备自带朗读的 rate），存着这个的按新的默认值算
+function cleanRates(v, old) {
+  if (Array.isArray(v) && v.length === 3 && v.every(x => x !== null && x !== '' && Number.isFinite(Number(x)))) {
+    const r = v.map(x => Math.round(Math.min(1.5, Math.max(0.5, Number(x))) * 100) / 100).sort((a, b) => a - b);
+    return String(v) === OLD_DEFAULT_RATES ? DEFAULT_RATES.slice() : r;
+  }
+  return old && Array.isArray(old.rates) && old.rates.length === 3 ? cleanRates(old.rates) : DEFAULT_RATES.slice();
+}
 const cleanLevel = v => (LEVELS.includes(v) ? v : 'auto');
 // 进阶 1–19 次，听写比进阶多（最多 20 次）
 function levelRule(med, dict, old) {
@@ -126,9 +140,9 @@ const DAYS_KEEP = 400; // 每日答对数保留的天数
 
 function publicConfig(cfg) {
   return {
-    children: cfg.children.map(({ id, name, goal, tries, round, daily, newCap, groups, level, lvMed, lvDict, maxBlanks }) => ({ id, name, goal: goal || DEFAULT_GOAL, tries: tries || DEFAULT_TRIES, round: round || DEFAULT_ROUND,
+    children: cfg.children.map(({ id, name, goal, tries, round, daily, newCap, groups, level, lvMed, lvDict, maxBlanks, rates }) => ({ id, name, goal: goal || DEFAULT_GOAL, tries: tries || DEFAULT_TRIES, round: round || DEFAULT_ROUND,
       daily: daily || DEFAULT_DAILY, newCap: newCap == null ? DEFAULT_NEWCAP : newCap, groups: cleanGroups(groups),
-      level: cleanLevel(level), lvMed: lvMed || DEFAULT_LV_MED, lvDict: lvDict || DEFAULT_LV_DICT, maxBlanks: maxBlanks || DEFAULT_MAX_BLANKS })),
+      level: cleanLevel(level), lvMed: lvMed || DEFAULT_LV_MED, lvDict: lvDict || DEFAULT_LV_DICT, maxBlanks: maxBlanks || DEFAULT_MAX_BLANKS, rates: cleanRates(rates) })),
     lists: cfg.lists.map(l => ({ id: l.id, name: l.name, roundSize: l.roundSize, count: l.count, group: listGroup(l) })),
   };
 }
@@ -236,13 +250,16 @@ async function saveRecord(s, cfg, body) {
   if (r.wrongWords && typeof r.wrongWords === 'object') {
     for (const [en, n] of Object.entries(r.wrongWords).slice(0, 500)) wrongWords[String(en).slice(0, 80)] = int(n, 0, 999, 0);
   }
+  // 今日复习、学新词、错词本按单词分组分开练：记下是哪个分组的
+  const group = VIRTUAL_LISTS[list.id] && typeof r.group === 'string' ? r.group.trim().slice(0, 30) : '';
   await s.setJSON(key, {
     id: r.id,
     seq,
     child: child.id,
     childName: child.name,
     list: list.id,
-    listName: list.name,
+    listName: list.name + (group ? ' · ' + group : ''),
+    ...(group ? { group } : {}),
     start: typeof r.start === 'string' ? r.start.slice(0, 40) : now,
     durationSec: int(r.durationSec, 0, 86400, 0),
     planned: int(r.planned, 0, 10000, 0),
@@ -380,7 +397,7 @@ async function admin(s, env, body) {
       list = { id: newId('l') };
       cfg.lists.push(list);
     }
-    Object.assign(list, { name, roundSize, count });
+    Object.assign(list, { name, roundSize, count, ts: Date.now() });
     list.group = input.group !== undefined ? normGroup(input.group) : listGroup(list);
     await s.set(listKey(list.id), text);
     await s.setJSON(CONFIG_KEY, cfg);
@@ -484,7 +501,7 @@ async function admin(s, env, body) {
       return { id, name, pin, goal: int(c.goal, 1, 500, (old && old.goal) || DEFAULT_GOAL), tries: int(c.tries, 1, 10, (old && old.tries) || DEFAULT_TRIES), round: int(c.round, 1, 100, (old && old.round) || DEFAULT_ROUND),
         daily: int(c.daily, 10, 200, (old && old.daily) || DEFAULT_DAILY), newCap: int(c.newCap, 0, 50, old && old.newCap != null ? old.newCap : DEFAULT_NEWCAP), groups: cleanGroups(c.groups),
         level: cleanLevel(c.level !== undefined ? c.level : old && old.level), ...levelRule(c.lvMed, c.lvDict, old),
-        maxBlanks: int(c.maxBlanks, 1, 30, (old && old.maxBlanks) || DEFAULT_MAX_BLANKS) };
+        maxBlanks: int(c.maxBlanks, 1, 30, (old && old.maxBlanks) || DEFAULT_MAX_BLANKS), rates: cleanRates(c.rates, old) };
     });
     const removed = cfg.children.filter(o => !children.some(c => c.id === o.id));
     // 修改了 PIN 或被删除的孩子，解除锁定
@@ -555,7 +572,7 @@ async function admin(s, env, body) {
           cfg.lists.push(t);
           sum.listsAdded++;
         } else sum.listsUpdated++;
-        Object.assign(t, { name, roundSize: int(l.roundSize, 1, 500, t.roundSize || 20), count });
+        Object.assign(t, { name, roundSize: int(l.roundSize, 1, 500, t.roundSize || 20), count, ts: Date.now() });
         t.group = l.group !== undefined ? normGroup(l.group) : listGroup(t);
         writes.push([listKey(t.id), text]);
       }
@@ -573,7 +590,7 @@ async function admin(s, env, body) {
           const id = typeof c.id === 'string' && ID_RE.test(c.id) && !cfg.children.some(x => x.id === c.id) ? c.id : newId('c');
           t = { id, name, pin, goal: int(c.goal, 1, 500, DEFAULT_GOAL), tries: int(c.tries, 1, 10, DEFAULT_TRIES), round: int(c.round, 1, 100, DEFAULT_ROUND),
             daily: int(c.daily, 10, 200, DEFAULT_DAILY), newCap: int(c.newCap, 0, 50, DEFAULT_NEWCAP), groups: cleanGroups(c.groups),
-            level: cleanLevel(c.level), ...levelRule(c.lvMed, c.lvDict), maxBlanks: int(c.maxBlanks, 1, 30, DEFAULT_MAX_BLANKS) };
+            level: cleanLevel(c.level), ...levelRule(c.lvMed, c.lvDict), maxBlanks: int(c.maxBlanks, 1, 30, DEFAULT_MAX_BLANKS), rates: cleanRates(c.rates) };
           cfg.children.push(t);
           sum.childrenAdded++;
         } else {
@@ -586,6 +603,7 @@ async function admin(s, env, body) {
           if (c.newCap !== undefined) t.newCap = int(c.newCap, 0, 50, t.newCap != null ? t.newCap : DEFAULT_NEWCAP);
           if (c.level !== undefined) t.level = cleanLevel(c.level);
           if (c.maxBlanks !== undefined) t.maxBlanks = int(c.maxBlanks, 1, 30, t.maxBlanks || DEFAULT_MAX_BLANKS);
+          if (c.rates !== undefined) t.rates = cleanRates(c.rates, t);
           if (c.lvMed !== undefined || c.lvDict !== undefined) Object.assign(t, levelRule(c.lvMed, c.lvDict, t));
           if (c.groups !== undefined) t.groups = cleanGroups(c.groups);
           sum.childrenUpdated++;
@@ -669,7 +687,10 @@ async function admin(s, env, body) {
       const answered = (r.correct || 0) + (r.wrong || 0);
       for (const t of [day, totals]) { t.rounds++; t.sec += r.durationSec || 0; t.answered += answered; t.correct += r.correct || 0; }
       const cur = cfg.lists.find(l => l.id === r.list);
-      const l = byList[r.list] || (byList[r.list] = { id: r.list, name: cur ? cur.name : (VIRTUAL_LISTS[r.list] || r.listName || r.list), answered: 0, correct: 0 });
+      // 今日复习、学新词、错词本按分组分开统计（以前的记录没有分组，合在一起）
+      const k = r.group ? r.list + ':' + r.group : r.list;
+      const vname = VIRTUAL_LISTS[r.list] && VIRTUAL_LISTS[r.list] + (r.group ? ' · ' + r.group : '');
+      const l = byList[k] || (byList[k] = { id: r.list, name: cur ? cur.name : (vname || r.listName || r.list), answered: 0, correct: 0 });
       l.answered += answered; l.correct += r.correct || 0;
     }
     // 复习概况：只统计这个孩子能练的单词表（按分组分配）里的单词，与练习页“今日复习”的计算一致
@@ -704,6 +725,39 @@ async function admin(s, env, body) {
   }
 
   bad('未知操作');
+}
+
+// ---------- 录音 ----------
+// 只给单词表里有的词条和例句取录音（整理后的文字，和练习页一致），防止被别人拿来当代理、把数据库塞满
+// 整理结果按“单词表目录”缓存在内存里，单词表有改动（编号、词数或保存时间变了）时重新整理
+let spoken = { sig: null, set: null };
+async function spokenSet(s, env) {
+  const cfg = await loadConfig(s, env);
+  const sig = cfg.lists.map(l => l.id + ':' + (l.count || 0) + ':' + (l.ts || 0)).join('|');
+  if (spoken.sig !== sig) {
+    const texts = await inBatches(cfg.lists, 10, l => s.get(listKey(l.id)));
+    const set = new Set();
+    texts.forEach(t => WordLib.parse(t || '').forEach(w => {
+      set.add(WordLib.sayText(w.en));
+      if (w.ex) set.add(WordLib.sayText(w.ex));
+    }));
+    spoken = { sig, set };
+  }
+  return spoken.set;
+}
+const AUDIO_RETRY_MS = 14 * 86400000; // 有道没有的发音，14 天后再去问一次（有道偶尔会漏给）
+async function getAudio(s, env, raw) {
+  const text = WordLib.sayText(raw);
+  if (!text || text.length > 150) bad('文字不对');
+  if (!(await spokenSet(s, env)).has(text)) bad('单词表里没有这句', 404);
+  const key = audioKey(await sha256(text));
+  const hit = await readJSON(s, key);
+  if (hit && (hit.a || Date.now() - hit.t < AUDIO_RETRY_MS)) return { audio: hit.a || null };
+  if (!env.fetchAudio) return { audio: null };
+  const a = await env.fetchAudio(text);
+  if (a === undefined) return { audio: null, retry: true }; // 网络出错：不记下来，下次再试
+  await s.setJSON(key, { text, a: a || '', t: Date.now() });
+  return { audio: a || null };
 }
 
 // ---------- 入口 ----------
@@ -749,6 +803,7 @@ export function handleGet(env, params) {
       const texts = await inBatches(cfg.lists, 10, l => s.get(listKey(l.id)));
       return { lists: cfg.lists.map((l, i) => ({ id: l.id, name: l.name, text: texts[i] || '' })) };
     }
+    if (op === 'audio') return getAudio(s, env, params.get('t') || '');
     bad('未知操作');
   });
 }

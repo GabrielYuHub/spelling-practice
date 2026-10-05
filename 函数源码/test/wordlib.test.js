@@ -217,3 +217,70 @@ test('学新词：新词数 = min(上限, 每天题量 − 今天的复习数) �
   const all = {}; pool.forEach(w => { all[w.en] = { right: 1, lvl: 3, due: '2026-07-01', first: '2026-06-01' }; });
   assert.equal(W.planNewWords(pool, all, { today: T, target: 30, cap: 5 }).status, 'all-done');
 });
+
+test('朗读文字：去掉省略号、括号，sb./sth. 读全称，斜杠读成停顿', () => {
+  assert.equal(W.sayText('ask... for help'), 'ask for help');
+  assert.equal(W.sayText('help sb. with sth.'), 'help somebody with something');
+  assert.equal(W.sayText('a/an (be) good at'), 'a, an be good at');
+  assert.equal(W.sayText("It's time for school."), "It's time for school.");
+  assert.equal(W.sayText('Walk straight for 200 meters, then turn left.'), 'Walk straight for 200 meters, then turn left.');
+});
+
+test('朗读单词：一词多音按词性纠正，过去式和例句不纠正', () => {
+  assert.equal(W.sayWord({ en: 'read', pos: 'v.', cn: '阅读' }), 'reed');
+  assert.equal(W.sayWord({ en: 'close', pos: 'v.', cn: '关；关闭' }), 'cloze');
+  assert.equal(W.sayWord({ en: 'read', pos: 'v.', cn: '读（过去式）' }), 'read');
+  assert.equal(W.sayWord({ en: 'close', pos: 'adj.', cn: '近的' }), 'close');
+  assert.equal(W.sayWord({ en: 'read books', pos: '', cn: '读书' }), 'read books');
+  assert.equal(W.sayWord({ en: 'school', pos: 'n.', cn: '学校' }), 'school');
+});
+
+test('挑声音：只用名单里的声音；联网时 Google US English 最先；美音、高级版和增强版优先；Samantha 放到美音最后；不用搞怪声音', () => {
+  const v = (name, lang, voiceURI, localService = true) => ({ name, lang, voiceURI: voiceURI || name, localService });
+  const albert = v('Albert', 'en-US'), zarvox = v('Zarvox', 'en-US'), eddy = v('Eddy (English (US))', 'en-US', 'com.apple.eloquence.en-US.Eddy');
+  const sam = v('Samantha', 'en-US', 'com.apple.voice.compact.en-US.Samantha');
+  const samEnh = v('Samantha (Enhanced)', 'en-US', 'com.apple.voice.enhanced.en-US.Samantha');
+  const alex = v('Alex', 'en-US', 'com.apple.speech.synthesis.voice.Alex');
+  const avaEnh = v('Ava (Enhanced)', 'en-US', 'com.apple.voice.enhanced.en-US.Ava');
+  const daniel = v('Daniel (Enhanced)', 'en-GB', 'com.apple.voice.enhanced.en-GB.Daniel');
+  const google = v('Google US English', 'en-US', 'Google US English', false);
+  const tingting = v('Tingting', 'zh-CN');
+  assert.equal(W.pickVoice([albert, zarvox, eddy, tingting]), null);          // 只有搞怪声音：不指定声音
+  assert.equal(W.pickVoice([albert, sam, eddy]), sam);                        // 只有 Samantha 时还是用它
+  assert.equal(W.pickVoice([sam, alex]), alex);                               // Samantha 放到美音最后
+  assert.equal(W.pickVoice([samEnh, alex]), alex);
+  assert.equal(W.pickVoice([sam, avaEnh, daniel]), avaEnh);                   // 增强版优先
+  assert.equal(W.pickVoice([daniel, sam]), sam);                              // 美音优先于英音
+  assert.equal(W.pickVoice([daniel, albert]), daniel);
+  assert.equal(W.pickVoice([sam, avaEnh, google]), google);                  // 联网时 Google US English 最先
+  assert.equal(W.pickVoice([sam, avaEnh, google], false), avaEnh);           // 没联网不用在线声音
+  assert.equal(W.pickVoice([v('Samantha', 'en_US')]).name, 'Samantha');        // 有的设备写成 en_US
+  assert.equal(W.pickVoice([v('Microsoft Aria Online (Natural) - English (United States)', 'en-US')]).name.startsWith('Microsoft Aria'), true);
+  assert.equal(W.pickVoice([]), null);
+});
+
+test('学新词按分组：从选的分组里挑新词；数量按所有分组合计；先复习只看这个分组', () => {
+  const today = '2026-10-05';
+  const mk = ens => ens.map(en => ({ en }));
+  const book = mk(['b1', 'b2', 'b3', 'b4']), ef = mk(['e1', 'e2', 'e3']);
+  const pool = book.concat(ef);
+  // 课本：b1 今天该复习；英孚：e1 今天刚学过（新词），其余都没答过
+  const stats = {
+    b1: { right: 1, wrong: 0, lvl: 1, due: today, first: '2026-10-01', last: '2026-10-04' },
+    e1: { right: 1, wrong: 0, lvl: 1, due: '2026-10-06', first: today, last: today },
+  };
+  const opts = { target: 30, cap: 3, today };
+  let p = W.planNewWords(pool, stats, { ...opts, scope: ef });
+  assert.equal(p.status, 'ready', '课本有没做的复习，不挡英孚学新词');
+  assert.deepEqual(p.words.map(w => w.en), ['e2', 'e3'], '只从英孚挑；今天两个分组一共还能学 3 − 1 = 2 个');
+  p = W.planNewWords(pool, stats, { ...opts, scope: book });
+  assert.equal(p.status, 'review-first', '课本自己有该复习的，先复习');
+  stats.e2 = { right: 1, wrong: 0, lvl: 1, due: '2026-10-06', first: today, last: today };
+  stats.e3 = { right: 1, wrong: 0, lvl: 1, due: '2026-10-06', first: today, last: today };
+  p = W.planNewWords(pool, stats, { ...opts, scope: ef });
+  assert.equal(p.status, 'all-done', '英孚的新词都学完了');
+  delete stats.b1;
+  p = W.planNewWords(pool, stats, { ...opts, scope: book });
+  assert.equal(p.status, 'today-done', '今天在英孚学满了 3 个，课本今天也不能再学');
+});
+

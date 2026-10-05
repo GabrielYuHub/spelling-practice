@@ -182,7 +182,8 @@
   const isDue = (w, today) => !!(w && w.lvl && !w.mastered && w.due && w.due <= (today || bjDate()));
 
   // ---------- 学新词：今天学几个、学哪几个 ----------
-  // pool：孩子能练的单词（按单词表顺序去重）；stats：熟练度；opts：{ target 每天题量, cap 每天新词上限, today }
+  // pool：孩子能练的单词（按单词表顺序去重）；stats：熟练度；opts：{ target 每天题量, cap 每天新词上限, today, scope }
+  // scope：只从这些词里挑新词（孩子选的单词分组）；数量按 pool（所有分组合计）算，“先完成今日复习”只看 scope 里的复习
   // 今天的复习数 = 还没做的复习 + 今天已经做过的复习（以前学过、今天答过的词）；今天学过的新词 = first 是今天的词
   // 今天还能学的新词 = min(上限, 每天题量 − 今天的复习数) − 今天学过的新词，最少 0
   // 一天中途刷新页面、换设备，结果都一样
@@ -191,20 +192,22 @@
     const today = opts.today || bjDate();
     const target = opts.target == null ? 30 : opts.target, cap = opts.cap == null ? 5 : opts.cap;
     let dueNow = 0, reviewedToday = 0, newToday = 0;
-    const fresh = [];
     for (const w of pool) {
       const st = stats[w.en];
-      if (isNewWord(st)) { fresh.push(w); continue; }
+      if (isNewWord(st)) continue;
       if (st.first === today) newToday++;
       else if (isDue(st, today)) dueNow++;
       else if (st.last === today) reviewedToday++;
     }
+    const scope = opts.scope || pool;
+    const fresh = scope.filter(w => isNewWord(stats[w.en]));
+    const scopeDue = opts.scope ? scope.filter(w => !isNewWord(stats[w.en]) && stats[w.en].first !== today && isDue(stats[w.en], today)).length : dueNow;
     const reviews = dueNow + reviewedToday;
     const quota = Math.max(0, Math.min(cap, target - reviews) - newToday);
     let status;
     if (!cap) status = 'paused';                 // 上限为 0：暂停学新词
     else if (!fresh.length) status = 'all-done'; // 新词都学完了
-    else if (dueNow) status = 'review-first';    // 先完成今日复习
+    else if (scopeDue) status = 'review-first';  // 先完成今日复习
     else if (quota) status = 'ready';
     else if (newToday) status = 'today-done';    // 今天的新词学完了
     else status = 'review-only';                 // 今天复习已经够量，只复习
@@ -232,8 +235,44 @@
     }
     return { todayCount: days[today] || 0, goal, doneToday: done(today), streak, best, total: dates.length };
   }
+  // ---------- 朗读用的文字和声音 ----------
+  // 朗读前整理文字：“ask... for help”的省略号、sb./sth.、括号、斜杠会让朗读引擎读得很怪
+  function sayText(t) {
+    return String(t || '').replace(/\bsb\./gi, 'somebody').replace(/\bsth\./gi, 'something')
+      .replace(/\.{2,}|…/g, ' ').replace(/[()（）[\]*~_]/g, ' ').replace(/\s*\/\s*/g, ', ')
+      .replace(/\s+/g, ' ').trim();
+  }
+  // 单独读一个词时，一词多音的词按词性纠正（例句有上下文，不用纠正）；写成“过去式”的不纠正
+  const SAY_FIX = { read: { v: 'reed' }, close: { v: 'cloze' }, live: { v: 'liv' }, lead: { v: 'leed' } };
+  function sayWord(w) {
+    const en = String(w.en || '').trim(), fix = SAY_FIX[en.toLowerCase()];
+    const pos = String(w.pos || '').toLowerCase().replace(/[^a-z]/g, '');
+    if (fix && fix[pos] && !/过去/.test(w.cn || '')) return fix[pos];
+    return sayText(en);
+  }
+  // 挑声音（没有录音时用设备自带朗读）：iPad 的“美式英语”里有很多搞怪声音（Albert、Bubbles、Zarvox…）和机器味重的声音（Eddy、Grandma…），只从名单里挑。
+  // 顺序：联网时电脑 Chrome 的 Google US English（最自然）→ 美音（高级版、增强版优先，再按名单顺序）→ Samantha（读长句子会出现呱呱的杂音，放到美音最后）→ 英音。
+  // 名单里一个都没有时返回 null（只指定 en-US）；没联网时不用在线声音
+  const GOOD_VOICES = ['Google US English', 'Ava', 'Allison', 'Susan', 'Nicky', 'Zoe', 'Evan', 'Tom', 'Nathan', 'Alex',
+    'Microsoft Aria', 'Microsoft Jenny', 'Microsoft Guy', 'Microsoft Zira', 'Samantha', 'Daniel', 'Kate', 'Serena', 'Google UK English Female'];
+  function voiceRank(v, online) {
+    const name = String(v.name || ''), lang = String(v.lang || '').replace('_', '-');
+    if (!/^en-(US|GB)/i.test(lang) || (v.localService === false && !online)) return -1;
+    const i = GOOD_VOICES.findIndex(n => name === n || name.startsWith(n + ' ') || name.startsWith(n + '(') || name.startsWith(n + '（'));
+    if (i < 0) return -1;
+    if (i === 0) return 0; // Google US English
+    const tag = name + ' ' + (v.voiceURI || '');
+    const q = /premium|高级/i.test(tag) ? 0 : /enhanced|增强/i.test(tag) ? 1 : 2;
+    return 1 + (/^en-US/i.test(lang) ? 0 : 1000) + (name.startsWith('Samantha') ? 500 : 0) + q * 100 + i;
+  }
+  function pickVoice(voices, online = true) {
+    let best = null, bestRank = Infinity;
+    (voices || []).forEach(v => { const r = voiceRank(v, online); if (r >= 0 && r < bestRank) { best = v; bestRank = r; } });
+    return best;
+  }
+
   const STREAK_BADGES = [3, 7, 14, 30, 100];
   const MASTER_BADGES = [10, 50, 100, 200];
 
-  (typeof window !== 'undefined' ? window : globalThis).WordLib = { parse, analyze, parseLine, isLetter, blanksFor, planNewWords, isNewWord, autoLevel, setRandom: f => { rnd = f || Math.random; }, applyAnswer, isDue, bjDate, addDays, INTERVALS, checkin, STREAK_BADGES, MASTER_BADGES };
+  (typeof window !== 'undefined' ? window : globalThis).WordLib = { parse, analyze, parseLine, isLetter, blanksFor, planNewWords, isNewWord, autoLevel, setRandom: f => { rnd = f || Math.random; }, applyAnswer, isDue, bjDate, addDays, INTERVALS, checkin, STREAK_BADGES, MASTER_BADGES, sayText, sayWord, pickVoice };
 })();

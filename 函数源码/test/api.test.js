@@ -9,7 +9,7 @@ test('首次访问自动初始化：默认孩子和默认单词表', async () =>
   const api = fresh();
   const { status, data } = await api.get('config');
   assert.equal(status, 200);
-  assert.deepEqual(data.children, [{ id: 'c_default', name: '小朋友', goal: 20, tries: 6, round: 20, daily: 30, newCap: 5, groups: null, level: 'auto', lvMed: 2, lvDict: 4, maxBlanks: 8 }]);
+  assert.deepEqual(data.children, [{ id: 'c_default', name: '小朋友', goal: 20, tries: 6, round: 20, daily: 30, newCap: 5, groups: null, level: 'auto', lvMed: 2, lvDict: 4, maxBlanks: 8, rates: [0.7, 0.85, 1] }]);
   assert.equal(data.lists[0].id, 'l_default');
   assert.equal(data.lists[0].group, '三上');
   assert.ok(data.lists[0].count > 0);
@@ -89,6 +89,18 @@ test('难度：按孩子保存；孩子切换要验证 PIN；家长可以设置�
   assert.equal(c.maxBlanks, 30, '挖空上限 1–30');
   c = (await api.admin('saveChildren', { children: [{ id: 'c_default', name: '小朋友', pin: '0000' }] })).data.config.children[0];
   assert.equal(c.maxBlanks, 30, '没传时保留原来的');
+  // 朗读语速：慢、中、快三个播放速度，0.5–1.5，保留两位小数，按从慢到快排好
+  c = (await api.admin('saveChildren', { children: [{ id: 'c_default', name: '小朋友', pin: '0000', rates: [0.5, 0.65, 0.8] }] })).data.config.children[0];
+  assert.deepEqual(c.rates, [0.5, 0.65, 0.8]);
+  c = (await api.admin('saveChildren', { children: [{ id: 'c_default', name: '小朋友', pin: '0000', rates: [2, 0.1, 0.777] }] })).data.config.children[0];
+  assert.deepEqual(c.rates, [0.5, 0.78, 1.5], '超出范围的取边界，并排好顺序');
+  c = (await api.admin('saveChildren', { children: [{ id: 'c_default', name: '小朋友', pin: '0000', rates: [0.5, 'x', 0.8] }] })).data.config.children[0];
+  assert.deepEqual(c.rates, [0.5, 0.78, 1.5], '格式不对时保留原来的');
+  c = (await api.admin('saveChildren', { children: [{ id: 'c_default', name: '小朋友', pin: '0000' }] })).data.config.children[0];
+  assert.deepEqual(c.rates, [0.5, 0.78, 1.5], '没传时保留原来的');
+  assert.deepEqual((await api.get('config')).data.children[0].rates, [0.5, 0.78, 1.5], '练习页读到的配置里有语速');
+  c = (await api.admin('saveChildren', { children: [{ id: 'c_default', name: '小朋友', pin: '0000', rates: [0.55, 0.7, 0.85] }] })).data.config.children[0];
+  assert.deepEqual(c.rates, [0.7, 0.85, 1], '改成录音以前的默认值，按新的默认值算');
 });
 
 test('答题记录：同一题第 3 次及以后的答错不加熟练度分数（ns）', async () => {
@@ -126,6 +138,14 @@ test('答题记录：检查 PIN、编号、单词表；今日复习和错词本�
   assert.equal((await record(api, { id: recordId('x_new', 'bbbb', Date.now() + 1000), events: [ev('school', true)] })).status, 200);
   const recs = (await api.admin('records', { child: 'c_default' })).data.records;
   assert.deepEqual(recs.map(r => r.listName), ['学新词', '今日复习']);
+  // 按单词分组练的今日复习、学新词、错词本：记录里记下分组，报表按分组分开统计；普通单词表不记分组
+  await record(api, { id: recordId('x_review', 'cccc', Date.now() + 2000), events: [ev('new', true)], group: '课本三上' });
+  await record(api, { id: recordId('x_review', 'dddd', Date.now() + 3000), events: [ev('new', false)], group: '英孚三上' });
+  await record(api, { id: recordId('l_default', 'eeee', Date.now() + 4000), events: [ev('new', true)], group: '课本三上' });
+  const recs2 = (await api.admin('records', { child: 'c_default' })).data.records;
+  assert.deepEqual(recs2.slice(0, 3).map(r => [r.listName, r.group]), [[recs2[0].listName, undefined], ['今日复习 · 英孚三上', '英孚三上'], ['今日复习 · 课本三上', '课本三上']]);
+  const rows = (await api.admin('report', { child: 'c_default', days: 7 })).data.lists.map(l => l.name).sort();
+  assert.ok(rows.includes('今日复习') && rows.includes('今日复习 · 课本三上') && rows.includes('今日复习 · 英孚三上'), rows.join(','));
   const st = (await api.get('stats', { child: 'c_default' })).data.words.school;
   assert.equal(st.first, bjDate(), '服务器也记下第一次答的日期');
   assert.equal((await api.post(undefined)).status, 400);
@@ -322,3 +342,36 @@ test('离线使用需要的文件：Service Worker、manifest、图标（图片�
   const head = await api.raw('HEAD', '/icon-192.png');
   assert.equal(head.isBase64Encoded, false);
 });
+
+test('录音：只给单词表里有的；取到后存起来，以后不再去有道；有道没有的也记下来；网络出错不记', async () => {
+  const api = fresh();
+  await api.get('config');
+  await api.admin('saveList', { list: { name: '测试' }, text: 'school n. 学校 | I go to school every day. | 我每天去上学。\nask... for help 请……帮忙' });
+  const asked = [];
+  globalThis.__fetchAudio = async text => { asked.push(text); return text === 'school' ? 'QUJD' : text === 'ask for help' ? undefined : null; };
+  try {
+    let r = await api.get('audio', { t: 'school' });
+    assert.deepEqual([r.status, r.data.audio], [200, 'QUJD']);
+    r = await api.get('audio', { t: 'school' });
+    assert.equal(r.data.audio, 'QUJD');
+    assert.deepEqual(asked, ['school'], '第二次从数据库取');
+    r = await api.get('audio', { t: 'I go to school every day.' });
+    assert.equal(r.data.audio, null);
+    await api.get('audio', { t: 'I go to school every day.' });
+    assert.equal(asked.filter(t => t.startsWith('I go')).length, 1, '有道没有的也记下来');
+    api.advance(15 * 86400000);
+    await api.get('audio', { t: 'I go to school every day.' });
+    assert.equal(asked.filter(t => t.startsWith('I go')).length, 2, '14 天后再问一次');
+    r = await api.get('audio', { t: 'ask... for help' });
+    assert.deepEqual([r.data.audio, r.data.retry], [null, true], '按朗读时整理过的文字取；网络出错时告诉练习页');
+    await api.get('audio', { t: 'ask... for help' });
+    assert.equal(asked.filter(t => t === 'ask for help').length, 2, '网络出错不记，下次再试');
+    r = await api.get('audio', { t: 'hello world' });
+    assert.equal(r.status, 404, '单词表里没有的不去取');
+    assert.ok(!asked.includes('hello world'));
+    await api.admin('saveList', { list: { name: '测试2' }, text: 'hello world 你好世界' });
+    r = await api.get('audio', { t: 'hello world' });
+    assert.equal(r.status, 200, '新加的单词表马上能取');
+  } finally { delete globalThis.__fetchAudio; }
+});
+

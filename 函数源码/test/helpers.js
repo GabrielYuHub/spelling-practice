@@ -65,12 +65,12 @@ const bjDate = (t = Date.now()) => new RealDate(t + 8 * 3600e3).toISOString().sl
 const recordId = (list, suffix, t = Date.now()) => new RealDate(t).toISOString().replace(/[-:]/g, '').slice(0, 15) + '_' + list + '_' + suffix;
 
 // 提交一轮记录（默认孩子、默认 PIN）
-function record(api, { id, seq = 1, events = [], status = 'complete', child = 'c_default', pin = '0000', start, correct, wrong } = {}) {
+function record(api, { id, seq = 1, events = [], status = 'complete', child = 'c_default', pin = '0000', start, correct, wrong, group } = {}) {
   const now = new RealDate(Date.now()).toISOString();
   return api.post({
     op: 'record', child, pin,
     record: {
-      id, seq, status, events, start: start || now, durationSec: 60,
+      id, seq, status, events, start: start || now, durationSec: 60, ...(group !== undefined ? { group } : {}),
       correct: correct === undefined ? events.filter(e => e.ok).length : correct,
       wrong: wrong === undefined ? events.filter(e => !e.ok).length : wrong,
     },

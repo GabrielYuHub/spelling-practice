@@ -138,7 +138,8 @@
 
 
   /* 顶部：孩子 / 标题 / 单词表 */
-  .header { width: 100%; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; }
+  /* 顶部一行可以比下面的内容宽（横屏 iPad 上用满屏幕宽度，按钮多了也放得下） */
+  .header { width: min(100vw - 32px, 1200px); display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; }
   .header h1 { text-align: center; }
   .header #childChip { justify-self: start; }
   .header .right { justify-self: end; display: flex; gap: 8px; align-items: center; }
@@ -160,6 +161,11 @@
   .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 18px; }
   .cards-heading { grid-column: 1 / -1; text-align: left; color: #6b7a8c; font-size: 18px; margin: 10px 0 -6px; }
   .card.study { background: #fff; }
+  /* 单词分组按钮：今日复习、学新词、错词本按分组分开练；红色数字是这个分组还没做的复习 */
+  .group-pills { grid-column: 1 / -1; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-bottom: -4px; }
+  .gpill { border: 1px solid #d6e2ee; background: #fff; color: var(--text); font: inherit; font-size: 19px; padding: 8px 20px; border-radius: 999px; cursor: pointer; }
+  .gpill.on { background: #dbeafb; border-color: #9cc3ec; color: #1f5fa8; font-weight: bold; }
+  .gbadge { display: inline-block; min-width: 22px; margin-left: 8px; padding: 0 6px; border-radius: 999px; background: #e53935; color: #fff; font-size: 14px; font-weight: bold; line-height: 22px; text-align: center; vertical-align: 2px; }
   /* 学习页面：学单词（单词组）和答题前的单词（今日复习、学新词、错词本）共用 */
   .study { width: 100%; max-width: 900px; }
   .study-head { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; margin: 4px 0 12px; }
@@ -170,6 +176,8 @@
   .sh-btn { border: 1px solid #d6e2ee; background: #fff; color: var(--blue); font: inherit; font-size: 17px; padding: 7px 14px; border-radius: 999px; cursor: pointer; white-space: nowrap; }
   .sh-btn.plain { border-color: transparent; background: none; padding-left: 4px; }
   .sh-btn.playing { background: #fff8e1; border-color: #f0c36d; color: #8a5a00; }
+  .sh-btn.paused { background: #e8f5e9; border-color: #a5d6a7; color: #1e7a2e; }
+  .sh-right { display: flex; gap: 8px; align-items: center; justify-self: end; }
   .sh-btn[hidden] { display: none; }
   .seg { display: inline-flex; gap: 4px; justify-self: end; }
   .seg button { border: 1px solid transparent; background: none; font: inherit; font-size: 17px; padding: 6px 16px; border-radius: 999px; cursor: pointer; color: #555; }
@@ -231,8 +239,9 @@
   @media (prefers-reduced-motion: reduce) { .fc-in { transition: none; } .flash.in-r, .flash.in-l { animation: none; } }
   .flash-ctrl { display: flex; justify-content: center; margin-top: 14px; }
   @media (max-width: 640px) {
-    .study-head { grid-template-columns: 1fr auto; }
-    .sh-title { grid-column: 1 / -1; order: -1; }
+    .study-head { display: flex; flex-wrap: wrap; gap: 8px; }
+    .sh-title { width: 100%; order: -1; }
+    .sh-right { margin-left: auto; }
     .sh-title h2 { font-size: 24px; }
     .sh-btn { font-size: 16px; padding: 6px 10px; }
     .sh-btn.plain { padding-left: 2px; }
@@ -366,6 +375,12 @@
     .score { font-size: 19px; }
     .chip { font-size: 16px; padding: 6px 12px; }
   }
+  /* 竖屏 iPad 和手机：标题单独一行，下面左边是孩子名字，右边是按钮 */
+  @media (max-width: 900px) {
+    .header { grid-template-columns: auto 1fr; row-gap: 6px; }
+    .header h1 { grid-column: 1 / -1; order: -1; }
+    .header .right { flex-wrap: wrap; justify-content: flex-end; }
+  }
   @media (max-width: 560px) {
     .krow { gap: 4px; }
     .key { flex-basis: calc((100% - 9 * 4px) / 10); height: 50px; font-size: 20px; border-radius: 8px; }
@@ -386,6 +401,7 @@
     <h1>单词拼写练习</h1>
     <div class="right">
       <button class="chip tool" id="speakChip" title="自动朗读开关" hidden>🔊</button>
+      <button class="chip tool" id="rateChip" title="朗读语速（点一下换）" hidden>🚶 中速</button>
       <button class="chip tool" id="levelChip" title="切换难度（下一题生效）" hidden>自动</button>
       <button class="chip placeholder" id="listChip" title="切换单词表"></button>
     </div>
@@ -418,10 +434,14 @@
     <div class="study-head">
       <div class="sh-left">
         <button class="sh-btn" id="readAllBtn">▶ 连续朗读</button>
+        <button class="sh-btn" id="readStopBtn" aria-label="停止朗读" title="停止朗读" hidden>⏹</button>
         <button class="sh-btn plain" id="studyBack">← 返回</button>
       </div>
       <div class="sh-title"><h2 id="studyTitle"></h2><div class="sh-sub" id="studySub"></div></div>
-      <div class="seg" id="studyModes"><button data-m="list">列表</button><button data-m="card">卡片</button></div>
+      <div class="sh-right">
+        <button class="sh-btn" id="studyRate" title="朗读语速（点一下换）">🚶 中速</button>
+        <div class="seg" id="studyModes"><button data-m="list">列表</button><button data-m="card">卡片</button></div>
+      </div>
     </div>
     <div class="unit-bar" id="unitBar"></div>
     <div class="study-start" id="studyStartBox" hidden><button class="btn next" id="studyStart">▶ 开始答题</button></div>
@@ -618,31 +638,210 @@
     tone(220, 0.24, 0.4, 'square', 0.12, 150);
   };
   const playKey = () => tone(880, 0, 0.05, 'sine', 0.05);
-  // iOS 需要在用户首次触摸时解锁音频
+  // iOS 需要在用户首次触摸时解锁音频：音效、设备自带朗读、录音播放器各解锁一次
   document.addEventListener('pointerdown', () => {
     audio();
     if ('speechSynthesis' in window) { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); }
+    if (!clipBusy()) { player.src = SILENT_WAV; player.play().catch(() => {}); }
   }, { once: true });
 
   // ---------- 朗读 ----------
+  // 先用录音（有道词典的发音：单词全有，短语和句子只有一部分）；没有录音时用设备自带朗读。
+  // 录音由云函数去有道取，存在云数据库里；每台设备第一次取到后再存一份在本机（Cache Storage），以后没网也能播。
+  // 设备自带朗读避开 Safari 的几个毛病：停掉上一句马上读新的，新的一句会被吞掉；切到后台再回来会卡在暂停；
+  // 朗读对象被回收后读完不回调；偶尔一直不出声
+  // 调试：网址加 ?debug 时，屏幕左下角显示朗读的每一步（录音还是自带朗读、用了哪个声音、语速、开始、结束、出错、重读）
+  const SPEECH_DEBUG = /[?&]debug\b/.test(location.search);
+  const dlog = (...a) => {
+    if (!SPEECH_DEBUG) return;
+    let box = document.getElementById('speechDebug');
+    if (!box) {
+      box = document.createElement('pre');
+      box.id = 'speechDebug';
+      box.style.cssText = 'position:fixed;left:6px;bottom:6px;z-index:9999;max-width:min(560px,calc(100vw - 12px));max-height:40vh;overflow:hidden;margin:0;padding:6px 8px;'
+        + 'background:rgba(0,0,0,.78);color:#9f9;font:11px/1.35 Menlo,monospace;white-space:pre-wrap;border-radius:6px;pointer-events:none';
+      document.body.appendChild(box);
+    }
+    const t = new Date(), ts = t.toTimeString().slice(3, 8) + '.' + String(t.getMilliseconds()).padStart(3, '0');
+    box.textContent = (box.textContent + '\n' + ts + ' ' + a.join(' ')).split('\n').slice(-16).join('\n').trim();
+  };
+  const isOnline = () => navigator.onLine !== false && !S.offline;
+
+  // ----- 录音 -----
+  const SILENT_WAV = 'data:audio/wav;base64,UklGRsQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YaAAAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA';
+  const player = new Audio();
+  player.preload = 'auto';
+  const clipBusy = () => !player.paused && !player.ended && player.src !== SILENT_WAV;
+  const CLIP_CACHE = 'spell-audio-v1', CLIP_NONE_DAYS = 14; // 没有录音的，14 天后再问服务器
+  const clipMem = new Map();      // 文字 → 播放地址（blob:）或 ''（没有录音）
+  const clipPending = new Map();  // 正在取的，避免同一句同时取两次
+  const clipKey = text => new Request(location.origin + '/__clip__?t=' + encodeURIComponent(text));
+  async function clipStore() { try { return 'caches' in window ? await caches.open(CLIP_CACHE) : null; } catch (e) { return null; } }
+  function b64Blob(b64) {
+    const bin = atob(b64), bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new Blob([bytes], { type: 'audio/mpeg' });
+  }
+  // 取一句的录音：返回播放地址；'' 表示有道没有这句；null 表示暂时拿不到（没网、超时），这次先用自带朗读
+  function getClip(text, timeout) {
+    if (clipMem.has(text)) return Promise.resolve(clipMem.get(text));
+    if (clipPending.has(text)) return clipPending.get(text);
+    const p = (async () => {
+      const store = await clipStore();
+      const hit = store && await store.match(clipKey(text)).catch(() => null);
+      if (hit) {
+        if (hit.headers.get('x-none')) {
+          if (Date.now() - Number(hit.headers.get('x-time') || 0) < CLIP_NONE_DAYS * 86400000) { clipMem.set(text, ''); return ''; }
+        } else {
+          const url = URL.createObjectURL(await hit.blob());
+          clipMem.set(text, url);
+          return url;
+        }
+      }
+      if (!isOnline()) return null;
+      let d;
+      try { d = await apiOnce('GET', '?op=audio&t=' + encodeURIComponent(text), null, { timeout: timeout || 8000 }); } catch (e) { return null; }
+      if (!d || d.retry) return null;
+      if (!d.audio) {
+        if (store) store.put(clipKey(text), new Response('', { headers: { 'x-none': '1', 'x-time': String(Date.now()) } })).catch(() => {});
+        clipMem.set(text, '');
+        return '';
+      }
+      const blob = b64Blob(d.audio);
+      if (store) store.put(clipKey(text), new Response(blob, { headers: { 'content-type': 'audio/mpeg' } })).catch(() => {});
+      const url = URL.createObjectURL(blob);
+      clipMem.set(text, url);
+      return url;
+    })().finally(() => clipPending.delete(text));
+    clipPending.set(text, p);
+    return p;
+  }
+  // 进入学习页面或开始一轮时，先在后台把这些单词和例句的录音取好（每次最多同时取 2 个），读的时候就不用等
+  let prefetchToken = 0;
+  function prefetchClips(words) {
+    if (!isOnline()) return;
+    const texts = [...new Set(words.flatMap(w => [w.en, w.ex]).filter(Boolean).map(WordLib.sayText))].filter(t => t && !clipMem.has(t));
+    const token = ++prefetchToken;
+    let i = 0;
+    const next = () => { if (token === prefetchToken && i < texts.length) getClip(texts[i++]).then(next, next); };
+    next(); next();
+  }
+
+  // ----- 设备自带朗读 -----
   let voice = null;
-  function loadVoice() {
-    if (!('speechSynthesis' in window)) return;
-    const vs = speechSynthesis.getVoices().filter(v => /^en[-_]/i.test(v.lang));
-    voice = vs.find(v => /en[-_]US/i.test(v.lang) && /Samantha|Google|Natural/i.test(v.name))
-         || vs.find(v => /en[-_]US/i.test(v.lang)) || vs[0] || null;
+  const loadVoice = () => {
+    const vs = speechSynthesis.getVoices(), v = WordLib.pickVoice(vs, isOnline());
+    if (v !== voice) dlog('声音列表', vs.length, '个，用', v ? v.name + ' ' + v.lang + ' ' + (v.voiceURI || '') : '（默认 en-US）');
+    voice = v;
+  };
+  if ('speechSynthesis' in window) { speechSynthesis.onvoiceschanged = loadVoice; }
+
+  let cur = null, lastCancel = 0;   // cur：正在读的一句 { onEnd, timers, tries, done }
+  // 这一句结束（读完、出错、超时或被新的一句打断），onEnd 只调用一次
+  function endSpeak(c) {
+    if (!c || c.done) return;
+    c.done = true;
+    c.timers.forEach(clearTimeout);
+    if (cur === c) cur = null;
+    if (c.onEnd) c.onEnd();
   }
-  if ('speechSynthesis' in window) { loadVoice(); speechSynthesis.onvoiceschanged = loadVoice; }
-  // onEnd：读完（或出错）时调用；不支持朗读时立即调用
-  function speak(text, onEnd) {
-    if (!('speechSynthesis' in window)) { if (onEnd) onEnd(); return; }
-    speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'en-US'; u.rate = 0.8;
-    if (voice) u.voice = voice;
-    if (onEnd) { u.onend = onEnd; u.onerror = onEnd; }
-    speechSynthesis.speak(u);
+  function stopSpeak() {
+    endSpeak(cur);
+    player.onended = player.onerror = null;
+    if (clipBusy()) player.pause();
+    if ('speechSynthesis' in window) { speechSynthesis.cancel(); lastCancel = Date.now(); }
   }
+  // 朗读时暂停网页的音效通道（按键声、答对声），避免和朗读抢声音；放音效时会自动打开
+  function quietEffects() { if (actx && actx.state === 'running') { actx.suspend().catch(() => {}); dlog('暂停音效通道'); } }
+  // text：要读的内容；ttsText：没有录音、用自带朗读时读的文字（一词多音的纠正过）；onEnd：读完（或出错、放弃）时调用
+  function speak(text, onEnd, ttsText) {
+    const say = WordLib.sayText(text);
+    if (!say) { if (onEnd) onEnd(); return; }
+    if (cur || clipBusy() || ('speechSynthesis' in window && (speechSynthesis.speaking || speechSynthesis.pending))) stopSpeak();
+    const c = cur = { onEnd, timers: [], tries: 0, done: false };
+    // 本机已有的立即播；要去服务器取的最多等 2.5 秒，来不及就这次先用自带朗读（后台接着取，下次就有了）
+    let settled = false;
+    const go = url => {
+      if (settled || c.done) return;
+      settled = true;
+      if (url) playClip(c, url, say, ttsText || say);
+      else { dlog(url === '' ? '没有录音：' : '录音没取到：', say.slice(0, 40)); ttsSpeak(c, ttsText || say); }
+    };
+    getClip(say).then(go, () => go(null));
+    c.timers.push(setTimeout(() => go(null), 2500));
+  }
+  function playClip(c, url, say, ttsText) {
+    const rate = Math.min(2, Math.max(0.5, speechRate()));
+    quietEffects();
+    let fell = false;
+    const fallback = why => { if (fell || c.done) return; fell = true; dlog('录音放不了（' + why + '），改用自带朗读'); player.onended = player.onerror = null; ttsSpeak(c, ttsText); };
+    player.onended = () => { dlog('录音读完'); endSpeak(c); };
+    player.onerror = () => fallback('出错');
+    player.src = url;
+    player.preservesPitch = player.webkitPreservesPitch = true; // 放慢时不变调
+    player.defaultPlaybackRate = player.playbackRate = rate;
+    dlog('录音：' + say.slice(0, 40), '速度', rate);
+    player.play().then(() => {
+      if (c.done) return;
+      // 保险：录音读完没有回调时，按长度估一个最长时间
+      const secs = isFinite(player.duration) && player.duration > 0 ? player.duration : 8;
+      c.timers.push(setTimeout(() => endSpeak(c), (secs / rate) * 1000 + 1500));
+    }, e => fallback(e && e.name));
+  }
+  function ttsSpeak(c, say) {
+    if (!('speechSynthesis' in window)) { endSpeak(c); return; }
+    loadVoice();
+    const start = () => {
+      if (c.done) return;
+      c.tries++;
+      const u = new SpeechSynthesisUtterance(say);
+      c.u = u; // 留着引用，防止被回收后读完不回调
+      u.lang = voice ? voice.lang.replace('_', '-') : 'en-US';
+      u.rate = speechRate() * 0.8; // 自带朗读比录音快，按同一档再乘 0.8
+      if (voice) try { u.voice = voice; } catch (e) { dlog('设置声音失败', e.message); }
+      let started = false;
+      // 开始出声后，按长度估一个最长时间，到了还没回调就当读完
+      const markStarted = why => {
+        if (started) return;
+        started = true;
+        dlog(why);
+        c.timers.push(setTimeout(() => { dlog('超时，当作读完'); endSpeak(c); }, 3000 + say.length * 120 / u.rate));
+      };
+      u.onstart = () => markStarted('开始出声');
+      u.onend = () => { dlog('读完'); if (c.u === u) endSpeak(c); };
+      u.onerror = e => { dlog('出错', e && e.error); if (c.u === u && started) endSpeak(c); };
+      quietEffects();
+      speechSynthesis.resume();
+      speechSynthesis.speak(u);
+      dlog('自带朗读：' + say.slice(0, 40), '语速', Math.round(u.rate * 100) / 100, voice ? voice.name : '默认', '第', c.tries, '次');
+      // 1.5 秒还没报告出声：iPad 说正在读就相信它，不打断；说没在读才停掉重读一次，还不行就放弃
+      c.timers.push(setTimeout(() => {
+        if (c.done || started) return;
+        if (speechSynthesis.speaking) { markStarted('没报告开始，但正在读，不打断'); return; }
+        if (c.tries >= 2) { dlog('还是没读，放弃'); endSpeak(c); return; }
+        dlog('1.5 秒没读，重读');
+        c.u = null;
+        speechSynthesis.cancel();
+        lastCancel = Date.now();
+        c.timers.push(setTimeout(start, 150));
+      }, 1500));
+    };
+    // 刚停掉上一句时隔一会儿再读，否则新的一句可能被吞掉或开头被切掉
+    const wait = 150 - (Date.now() - lastCancel);
+    if (wait > 0) c.timers.push(setTimeout(start, wait)); else start();
+  }
+  // 语速：慢 / 中 / 快三档，数值是孩子的设置（管理页，播放速度，1 = 录音原速）；选哪一档按孩子记在这台设备上
+  const RATE_KEYS = ['slow', 'mid', 'fast'], RATE_LABEL = ['🐢 慢速', '🚶 中速', '🐇 快速'], DEFAULT_RATES = [0.7, 0.85, 1];
+  const rateKey = () => 'spell_rate_' + (S.session ? S.session.child : '');
+  function rateIdx() { const i = RATE_KEYS.indexOf(ls.get(rateKey(), 'mid')); return i < 0 ? 1 : i; }
+  function speechRate() {
+    const c = myChild(), r = c && Array.isArray(c.rates) && c.rates.length === 3 ? c.rates : DEFAULT_RATES;
+    return Number(r[rateIdx()]) || DEFAULT_RATES[1];
+  }
+  function updateRate() { $('rateChip').textContent = $('studyRate').textContent = RATE_LABEL[rateIdx()]; }
+  function cycleRate() { ls.set(rateKey(), RATE_KEYS[(rateIdx() + 1) % 3]); updateRate(); }
+  // 读一个单词：有录音就放录音；用自带朗读时，一词多音的按词性纠正
+  const speakWord = (w, onEnd) => speak(w.en, onEnd, WordLib.sayWord(w));
 
   // ---------- 状态 ----------
   const S = {
@@ -680,16 +879,17 @@
   // 一轮：词数不超过每轮题数时全出；否则按熟练度加权抽取（错得多的更容易被抽到）
   // 熟练度分数 ≥4 的词在一轮里出现 2 次，≥8 出现 3 次
   // 学新词：按孩子的“每天题量”和“每天新词上限”算今天学几个、学哪几个（规则见 wordlib.js）
-  function newPlan() {
+  // 按单词分组：从这个分组挑新词；每天学几个按所有分组合计；“先完成今日复习”只看这个分组
+  function newPlan(g = curGroup()) {
     const c = S.session && S.config && S.config.children.find(x => x.id === S.session.child);
-    return WordLib.planNewWords(S.pool, S.stats, { target: (c && c.daily) || 30, cap: c && c.newCap != null ? c.newCap : 5 });
+    return WordLib.planNewWords(S.pool, S.stats, { target: (c && c.daily) || 30, cap: c && c.newCap != null ? c.newCap : 5, scope: poolOf(g) });
   }
   const NEW_STATUS = {
     ready: n => '今天学 ' + n + ' 个新词',
     'review-first': () => '先完成今日复习',
     'today-done': () => '今天的新词学完啦 🎉',
     'review-only': () => '今天复习已够量，只复习',
-    'all-done': () => '新词都学完啦',
+    'all-done': () => '这组的新词都学完啦',
     paused: () => '暂停学新词',
   };
   const myChild = () => S.session && S.config && S.config.children.find(x => x.id === S.session.child);
@@ -734,10 +934,11 @@
     S.queue = buildQueue();
     const now = Date.now();
     S.round = {
-      id: newRecordId(S.list.id), start: now, lastActive: now, planned: S.queue.length,
+      id: newRecordId(S.list.id), group: S.list.group || '', start: now, lastActive: now, planned: S.queue.length,
       events: [], sent: 0, seq: 0, lastStatus: '', correct: 0, wrong: 0, wrongWords: {}, skipped: [], done: false,
     };
     S.cur = -1;
+    prefetchClips(S.words);
     nextWord();
   }
 
@@ -764,7 +965,7 @@
 
   function nextWord() {
     if (S.advTimer) { clearTimeout(S.advTimer); S.advTimer = null; }
-    if ('speechSynthesis' in window) speechSynthesis.cancel(); // 例句还没读完就换题时停止朗读
+    stopSpeak(); // 例句还没读完就换题时停止朗读
     show('example', false);
     leaveCurrent();
     if (!S.queue.length) { S.cur = -1; showRoundEnd(); return; }
@@ -789,7 +990,7 @@
     renderWord();
     updateScore();
     updateLevelChip();
-    if (S.autoSpeak || S.lv === 'dictation') setTimeout(() => { if (S.words[S.cur] === w) speak(w.en); }, 350);
+    if (S.autoSpeak || S.lv === 'dictation') setTimeout(() => { if (S.words[S.cur] === w) speakWord(w); }, 350);
   }
 
   function levelOf(w) {
@@ -868,12 +1069,12 @@
   // 显示正确答案（绿色）并朗读，键盘暂停输入，等小朋友按“下一个单词”
   // 两种情况：答错达到最多尝试次数；或者答错过以后自己点了“👀 看答案”
   function revealAnswer(title) {
-    const w = S.words[S.cur].en;
+    const w = S.words[S.cur];
     S.revealed = true;
     S.busy = true;
     show('peekBtn', false);
     renderWord(true);
-    if (S.autoSpeak || S.lv === 'dictation') speak(w);
+    if (S.autoSpeak || S.lv === 'dictation') speakWord(w);
     showFeedback('bad', '💡', title + '<br><small style="font-size:.6em">记住它，然后按“下一个单词”</small>');
     setTimeout(() => { if (S.revealed) hideFeedback(); $('word').classList.remove('shake'); }, 1800);
     $('nextBtn').classList.add('pulse');
@@ -960,7 +1161,7 @@
           advance(1000);
         };
         // 有的设备读完不回调，按句子长度估一个最长等待时间
-        S.advTimer = setTimeout(finish, Math.min(15000, 2500 + word.ex.length * 110));
+        S.advTimer = setTimeout(finish, Math.min(30000, 6000 + word.ex.length * 120 / speechRate())); // 保险：朗读一直不回调时也能换题
         speak(word.ex, finish);
       }, checkedIn ? 2300 : 1500);
     } else {
@@ -1058,7 +1259,7 @@
     const payload = {
       op: 'record', child: S.session.child, pin: S.session.pin,
       record: {
-        id: r.id, seq: r.seq, status,
+        id: r.id, seq: r.seq, status, group: r.group || undefined,
         start: new Date(r.start).toISOString(),
         durationSec: Math.round((r.lastActive - r.start) / 1000),
         planned: r.planned, correct: r.correct, wrong: r.wrong,
@@ -1125,6 +1326,8 @@
     show('gameView', name === 'game');
     show('adminLink', false); // 只在“你是谁？”页面显示
     show('speakChip', name === 'game');
+    show('rateChip', name === 'game');
+    updateRate();
     show('levelChip', name === 'game');
     S.view = name;
     updateChips();
@@ -1198,6 +1401,19 @@
     const box = $('cards');
     box.innerHTML = '';
     items.forEach(it => {
+      if (it.pills) {
+        const bar = document.createElement('div');
+        bar.className = 'group-pills';
+        it.pills.forEach(p => {
+          const b = document.createElement('button');
+          b.className = 'gpill' + (p.on ? ' on' : '');
+          b.innerHTML = esc(p.name) + (p.badge ? '<span class="gbadge" title="还没做的复习">' + p.badge + '</span>' : '');
+          b.addEventListener('click', p.onClick);
+          bar.appendChild(b);
+        });
+        box.appendChild(bar);
+        return;
+      }
       if (it.heading) { const h = document.createElement('div'); h.className = 'cards-heading'; h.textContent = it.heading; box.appendChild(h); return; }
       const b = document.createElement('button');
       b.className = 'card' + (it.last ? ' last' : '') + (it.cls ? ' ' + it.cls : '');
@@ -1244,14 +1460,14 @@
     }
   }
 
-  // 今日复习 / 错词本：从所有单词表里挑词（同一个英文只取第一次出现的释义）
-  function reviewWords() {
+  // 今日复习 / 错词本：从孩子选的单词分组里挑词（同一个英文在分组里只取第一次出现的释义）
+  function reviewWords(g = curGroup()) {
     const today = WordLib.bjDate();
-    return S.pool.filter(w => WordLib.isDue(S.stats[w.en], today))
+    return poolOf(g).filter(w => WordLib.isDue(S.stats[w.en], today))
       .sort((a, b) => (S.stats[a.en].due < S.stats[b.en].due ? -1 : S.stats[a.en].due > S.stats[b.en].due ? 1 : 0));
   }
-  function wrongWords() {
-    return S.pool.filter(w => ((S.stats[w.en] || {}).score || 0) > 0)
+  function wrongWords(g = curGroup()) {
+    return poolOf(g).filter(w => ((S.stats[w.en] || {}).score || 0) > 0)
       .sort((a, b) => S.stats[b.en].score - S.stats[a.en].score);
   }
 
@@ -1342,6 +1558,12 @@
     // 今日复习 / 错词本只从这个孩子能用的单词表里挑词
     // 按管理页的顺序（先分组，再组里的单词表，再表里每行）：学新词按这个顺序出词
     orderedMyLists().forEach(l => WordLib.parse(S.texts[l.id] || '').forEach(w => { if (!seen.has(w.en)) { seen.add(w.en); S.pool.push(w); } }));
+    // 每个单词分组自己的词池：今日复习、学新词、错词本按分组分开练（熟练度还是按单词记，几个分组共用）
+    S.groupPools = {};
+    listGroups().forEach(g => {
+      const inGroup = new Set(), words = S.groupPools[g] = [];
+      myLists().filter(l => groupName(l) === g).forEach(l => WordLib.parse(S.texts[l.id] || '').forEach(w => { if (!inGroup.has(w.en)) { inGroup.add(w.en); words.push(w); } }));
+    });
     S.stats = (st && st.words) || {};
     S.days = (st && st.days) || {};
     replayQueue(S.stats, S.days);
@@ -1357,9 +1579,7 @@
     try { await loadPoolAndStats(); } catch (e) { loadErr = '复习数据没加载出来（' + e.message + '），今日复习和错词本的数量可能不准'; }
     overlay('loadingOverlay', false);
     renderListCards();
-    const due = reviewWords().length;
-    $('reviewBanner').textContent = '📅 今天有 ' + due + ' 个单词该复习了';
-    show('reviewBanner', due > 0);
+    renderReviewBanner();
     renderCheckin();
     renderLevelBar();
     show('levelBox', true);
@@ -1402,25 +1622,42 @@
   // 孩子能练的单词表，按管理页的顺序：分组顺序（“其他”最后），组里按单词表顺序
   const orderedMyLists = () => listGroups().flatMap(g => myLists().filter(l => groupName(l) === g));
 
+  // 孩子选的单词分组：按孩子记在这台设备上；第一次（或那个分组不能练了）用管理页里排第一的分组
+  const groupKeyLS = () => 'spell_group_' + (S.session ? S.session.child : '');
+  function curGroup() {
+    const gs = listGroups(), g = ls.get(groupKeyLS(), null);
+    return gs.includes(g) ? g : (gs[0] || '');
+  }
+  const poolOf = g => (S.groupPools && S.groupPools[g]) || S.pool;
+  function setGroup(g) {
+    ls.set(groupKeyLS(), g);
+    $('pickMsg').textContent = ''; // 上一个分组的提示（比如“复习都完成啦”）不再显示
+    renderListCards();
+    renderReviewBanner();
+  }
+  // 今天一共要复习几个词（几个分组里都有的词只算一次）；有好几个分组时，后面写上每个分组各几个
+  function renderReviewBanner() {
+    const today = WordLib.bjDate(), gs = listGroups();
+    const total = S.pool.filter(w => WordLib.isDue(S.stats[w.en], today)).length;
+    const each = gs.length > 1 ? gs.map(g => [g, reviewWords(g).length]).filter(x => x[1]) : [];
+    $('reviewBanner').textContent = '📅 今天有 ' + total + ' 个单词该复习了' + (each.length ? '（' + each.map(x => x[0] + ' ' + x[1]).join(' · ') + '）' : '');
+    show('reviewBanner', total > 0);
+  }
+
   const PICK_TITLE = '今天练什么？';
-  // 选表页：上面是三个答题入口（今日复习、学新词、错词本），下面是单词组（点进去只看不考）
+  // 选表页：有好几个单词分组时，上面先选分组；下面是这个分组的三个答题入口（今日复习、学新词、错词本）和学单词（点进去只看不考）
   function renderListCards() {
-    const due = reviewWords().length, wrong = wrongWords().length;
-    const plan = newPlan();
+    const gs = listGroups(), g = curGroup();
+    const due = reviewWords(g).length, wrong = wrongWords(g).length;
+    const plan = newPlan(g);
     const msg = $('pickMsg').textContent, msgCls = $('pickMsg').className;
-    const groups = listGroups().map(g => {
-      const lists = myLists().filter(l => groupName(l) === g);
-      const seen = new Set();
-      lists.forEach(l => WordLib.parse(S.texts[l.id] || '').forEach(w => seen.add(w.en)));
-      return { g, lists: lists.length, words: seen.size };
-    });
-    renderCards(PICK_TITLE, [
+    const nLists = myLists().filter(l => groupName(l) === g).length;
+    renderCards(PICK_TITLE, (gs.length > 1 ? [{ pills: gs.map(x => ({ name: x, on: x === g, badge: reviewWords(x).length, onClick: () => setGroup(x) })) }] : []).concat([
       { icon: '📅', name: '今日复习', sub: due ? due + ' 个单词' : '今天没有要复习的', cls: 'review', disabled: !due, onClick: () => startVirtual('review') },
       { icon: '✨', name: '学新词', sub: NEW_STATUS[plan.status](plan.quota), cls: 'new', disabled: plan.status !== 'ready', onClick: () => startVirtual('new') },
       { icon: '📕', name: '错词本', sub: wrong ? wrong + ' 个错词' : '暂无错词', cls: 'wrong', disabled: !wrong, onClick: () => startVirtual('wrong') },
-    ].concat(groups.length ? [{ heading: '📖 学单词（看一看、听一听，不用答题）' }] : [], groups.map(x => ({
-      icon: '📘', name: x.g, sub: x.lists + ' 个单词表 · ' + x.words + ' 个词', cls: 'study', onClick: () => showStudy(x.g),
-    }))));
+    ], g ? [{ heading: '📖 学单词（看一看、听一听，不用答题）' },
+      { icon: '📘', name: g, sub: nLists + ' 个单词表 · ' + poolOf(g).length + ' 个词', cls: 'study', onClick: () => showStudy(g) }] : []));
     $('pickMsg').textContent = msg; $('pickMsg').className = msgCls; // 保留提示
     show('adminLink', true); // 选表页面也有管理员入口
   }
@@ -1439,7 +1676,7 @@
     const saved = ls.get(studyKey(), null) || {};
     let list = study.lists.find(l => l.id === saved.list);
     if (!list) {
-      const next = S.pool.find(w => WordLib.isNewWord(S.stats[w.en]));
+      const next = poolOf(g).find(w => WordLib.isNewWord(S.stats[w.en]));
       list = (next && study.lists.find(l => WordLib.parse(S.texts[l.id] || '').some(w => w.en === next.en))) || study.lists[0];
     }
     study.mode = saved.mode === 'card' ? 'card' : 'list';
@@ -1467,7 +1704,7 @@
     study.mode = saved.mode === 'card' ? 'card' : 'list';
     study.cnFirst = !!saved.cnFirst;
     $('studyTitle').textContent = v.icon + ' ' + v.name;
-    $('studySub').textContent = S.words.length + ' 个单词 · ' + v.sub;
+    $('studySub').textContent = (listGroups().length > 1 && S.list.group ? S.list.group + ' · ' : '') + S.words.length + ' 个单词 · ' + v.sub;
     show('unitBar', false);
     show('studyStartBox', true);
     show('adminLink', false);
@@ -1490,6 +1727,7 @@
     ul.innerHTML = '';
     words.forEach(w => ul.appendChild(studyRow(w)));
     if (!words.length) ul.innerHTML = '<li>这个单词表还没有保存到这台设备上，联网后再试</li>';
+    prefetchClips(words);
     setStudyMode(study.mode);
     window.scrollTo(0, 0);
   }
@@ -1512,7 +1750,8 @@
       + (w.note ? ' <small>' + esc(w.note) + '</small>' : '') + '</span></div>'
       + (w.ex ? '<div class="sex">' + esc(w.ex) + (w.exCn ? '<span>' + esc(w.exCn) + '</span>' : '') + '</div>' : '') + '</div>'
       + '<span class="pill ' + cls + '">' + label + '</span>';
-    li.querySelector('.spk').addEventListener('click', () => { stopReadAll(); speak(w.en); });
+    li.querySelector('.spk').addEventListener('click', e => { e.stopPropagation(); pauseReadAll(); speakWord(w); });
+    li.addEventListener('click', () => { if (reader.state === 'pause') playReadAll([...li.parentNode.children].indexOf(li)); });
     return li;
   }
   // 翻卡片：正面先看英文（或先看中文），点卡片左右翻面；dir 是换卡片时新卡片滑进来的方向（1 从右边，-1 从左边）
@@ -1530,9 +1769,9 @@
     const say = '<button class="spk" aria-label="朗读">' + SPK_SVG + '</button>';
     const front = study.cnFirst ? cn + '<div class="hint">想一想英文怎么拼，点一下翻面</div>' : en + say + '<div class="hint">想一想是什么意思，点一下翻面</div>';
     box.innerHTML = '<div class="fc-in"><div class="fc-face front">' + count + front + '</div><div class="fc-face back">' + count + en + cn + say + ex + '</div></div>';
-    box.querySelectorAll('.spk').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); speak(w.en); }));
+    box.querySelectorAll('.spk').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); speakWord(w); }));
     if (dir) { box.classList.remove('in-l', 'in-r'); void box.offsetWidth; box.classList.add(dir > 0 ? 'in-r' : 'in-l'); }
-    if (speakIt && !study.cnFirst) speak(w.en);
+    if (speakIt && !study.cnFirst) speakWord(w);
   }
   // 翻面：翻到背面时读一遍
   function flipFlash() {
@@ -1540,44 +1779,65 @@
     if (!w) return;
     study.flipped = !study.flipped;
     $('flash').classList.toggle('flipped', study.flipped);
-    if (study.flipped) speak(w.en);
+    if (study.flipped) speakWord(w);
   }
   function flashGo(step) {
     if (!study.words.length) return;
     study.idx = (study.idx + step + study.words.length) % study.words.length;
     renderFlash(true, step);
   }
-  // 连续朗读：一个接一个读单词和例句，当前这一行高亮
-  let readToken = 0;
-  function stopReadAll() {
-    if (!readToken) return;
-    readToken = 0;
-    if ('speechSynthesis' in window) speechSynthesis.cancel();
-    document.querySelectorAll('#studyWords li.reading').forEach(li => li.classList.remove('reading'));
-    $('readAllBtn').textContent = '▶ 连续朗读';
-    $('readAllBtn').classList.remove('playing');
+  // 连续朗读：一个接一个读单词和例句，当前这一行高亮。
+  // 按钮：▶ 连续朗读 → ⏸ 暂停 → ▶ 继续（从停下的那个单词重新读）；⏹ 完全停止，下次从头读
+  const reader = { state: '', idx: 0, token: 0 };   // state：'' 没在读，'play' 在读，'pause' 暂停
+  function setReader(state) {
+    reader.state = state;
+    const b = $('readAllBtn');
+    b.textContent = state === 'play' ? '⏸ 暂停' : state === 'pause' ? '▶ 继续' : '▶ 连续朗读';
+    b.classList.toggle('playing', state === 'play');
+    b.classList.toggle('paused', state === 'pause');
+    show('readStopBtn', !!state);
   }
-  function readAll() {
-    if (readToken) { stopReadAll(); return; }
-    const token = readToken = Date.now();
-    $('readAllBtn').textContent = '⏸ 停止朗读';
-    $('readAllBtn').classList.add('playing');
+  const markRow = i => [...$('studyWords').children].forEach((li, k) => li.classList.toggle('reading', k === i));
+  // 完全停止（点 ⏹、换单元、换模式、离开页面）
+  function stopReadAll() {
+    if (!reader.state) return;
+    reader.token = 0;
+    stopSpeak();
+    markRow(-1);
+    setReader('');
+  }
+  // 暂停：停在当前这一行，保持高亮
+  function pauseReadAll() {
+    if (reader.state !== 'play') return;
+    reader.token = 0;
+    stopSpeak();
+    setReader('pause');
+  }
+  function playReadAll(from) {
+    const token = reader.token = Date.now();
+    setReader('play');
     const rows = [...$('studyWords').children];
+    const alive = () => reader.token === token;
     const wait = ms => new Promise(r => setTimeout(r, ms));
-    const say = text => new Promise(r => { let done = false; const end = () => { if (!done) { done = true; r(); } }; speak(text, end); setTimeout(end, 2500 + text.length * 120); });
+    const say = f => new Promise(r => f(r)); // speak 保证会回调（读完、出错、超时或被打断）
     (async () => {
-      for (let i = 0; i < study.words.length && readToken === token; i++) {
+      for (let i = from; i < study.words.length && alive(); i++) {
+        reader.idx = i;
         const w = study.words[i];
-        rows.forEach((li, k) => li.classList.toggle('reading', k === i));
+        markRow(i);
         if (rows[i]) rows[i].scrollIntoView({ block: 'center', behavior: 'smooth' });
         const t0 = Date.now();
-        await say(w.en);
-        if (readToken !== token) return;
-        if (w.ex) { await wait(400); if (readToken !== token) return; await say(w.ex); }
+        await say(r => speakWord(w, r));
+        if (!alive()) return;
+        if (w.ex) { await wait(400); if (!alive()) return; await say(r => speak(w.ex, r)); }
         await wait(Math.max(700, 1200 - (Date.now() - t0)));
       }
-      if (readToken === token) stopReadAll();
+      if (alive()) stopReadAll();
     })();
+  }
+  function readAll() {
+    if (reader.state === 'play') pauseReadAll();
+    else playReadAll(reader.state === 'pause' ? reader.idx : 0);
   }
 
 
@@ -1634,21 +1894,22 @@
   // ---------- 开始答题 ----------
   // 今日复习 / 错词本（虚拟单词表，每轮最多取孩子的“每轮题数”个，按优先顺序取）
   const VIRTUAL = {
-    review: { id: 'x_review', icon: '📅', name: '今日复习', pick: reviewWords, sub: '这些单词今天该复习了' },
-    new: { id: 'x_new', icon: '✨', name: '学新词', pick: () => newPlan().words, sub: '先看一遍新词的意思，听听读音，再开始答题' },
-    wrong: { id: 'x_wrong', icon: '📕', name: '错词本', pick: wrongWords, sub: '这些单词最近容易错，多练几遍' },
+    review: { id: 'x_review', icon: '📅', name: '今日复习', pick: g => reviewWords(g), sub: '这些单词今天该复习了' },
+    new: { id: 'x_new', icon: '✨', name: '学新词', pick: g => newPlan(g).words, sub: '先看一遍新词的意思，听听读音，再开始答题' },
+    wrong: { id: 'x_wrong', icon: '📕', name: '错词本', pick: g => wrongWords(g), sub: '这些单词最近容易错，多练几遍' },
   };
-  const NEW_EMPTY = { 'review-first': '先完成今日复习，再学新词', 'today-done': '🎉 今天的新词学完啦！', 'review-only': '今天复习已经够量了，明天再学新词', 'all-done': '🎉 新词都学完啦！', paused: '学新词已暂停' };
-  // direct：本轮结束后点“再来一轮”时直接开始，不再显示列表
-  function startVirtual(kind, direct) {
+  const NEW_EMPTY = { 'review-first': '先完成今日复习，再学新词', 'today-done': '🎉 今天的新词学完啦！', 'review-only': '今天复习已经够量了，明天再学新词', 'all-done': '🎉 这组的新词都学完啦！', paused: '学新词已暂停' };
+  // direct：本轮结束后点“再来一轮”时直接开始，不再显示列表；g：单词分组（默认孩子选的分组）
+  function startVirtual(kind, direct, g = curGroup()) {
     const v = VIRTUAL[kind];
-    const words = v.pick().slice(0, roundOf());
+    const words = v.pick(g).slice(0, roundOf());
     if (!words.length) {
-      if (kind === 'new') { const st = newPlan().status; showListPicker(NEW_EMPTY[st] || '', st === 'today-done' || st === 'all-done'); return; }
+      if (kind === 'new') { const st = newPlan(g).status; showListPicker(NEW_EMPTY[st] || '', st === 'today-done' || st === 'all-done'); return; }
       showListPicker(kind === 'review' ? '🎉 今天的复习都完成啦！' : '🎉 错词都练好啦！', true);
       return;
     }
-    S.list = { id: v.id, name: v.name, virtual: kind };
+    // 有好几个分组时，名字后面写上分组（右上角的“换单词表”按钮、答题记录、报表都用这个）
+    S.list = { id: v.id, name: v.name + (listGroups().length > 1 && g ? ' · ' + g : ''), virtual: kind, group: g };
     S.words = words;
     updateChips();
     if (direct) { showView('game'); startRound(); return; }
@@ -1752,9 +2013,9 @@
   });
   $('resetBtn').addEventListener('click', resetWord);
   $('nextBtn').addEventListener('click', () => submit(true));
-  $('speakBtn').addEventListener('click', () => { if (S.cur >= 0) speak(S.words[S.cur].en); });
+  $('speakBtn').addEventListener('click', () => { if (S.cur >= 0) speakWord(S.words[S.cur]); });
   $('newRoundBtn').addEventListener('click', () => {
-    if (S.list && S.list.virtual) { overlay('roundOverlay', false); startVirtual(S.list.virtual, true); }
+    if (S.list && S.list.virtual) { overlay('roundOverlay', false); startVirtual(S.list.virtual, true, S.list.group); }
     else startRound();
   });
   $('checkinBar').addEventListener('click', showBadges);
@@ -1762,6 +2023,11 @@
   $('studyBack').addEventListener('click', () => { stopReadAll(); showListPicker(); });
   $('studyModes').addEventListener('click', e => { const m = e.target.dataset && e.target.dataset.m; if (m) setStudyMode(m); });
   $('readAllBtn').addEventListener('click', readAll);
+  $('readStopBtn').addEventListener('click', stopReadAll);
+  $('rateChip').addEventListener('click', () => { cycleRate(); if (S.cur >= 0) speakWord(S.words[S.cur]); });
+  $('studyRate').addEventListener('click', () => { cycleRate(); if (study.mode === 'card' && study.words[study.idx]) speakWord(study.words[study.idx]); });
+  // 锁屏或切到别的 App 时，连续朗读自动暂停
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') pauseReadAll(); });
   $('flash').addEventListener('click', flipFlash);
   $('fcPrev').addEventListener('click', () => flashGo(-1));
   $('fcNext').addEventListener('click', () => flashGo(1));
@@ -1772,7 +2038,7 @@
     S.autoSpeak = !S.autoSpeak;
     ls.set('spell_autospeak', S.autoSpeak);
     updateSpeakChip();
-    if (S.autoSpeak && S.cur >= 0) speak(S.words[S.cur].en);
+    if (S.autoSpeak && S.cur >= 0) speakWord(S.words[S.cur]);
   });
   $('levelChip').addEventListener('click', () => {
     const i = LEVELS.findIndex(l => l[0] === S.level);

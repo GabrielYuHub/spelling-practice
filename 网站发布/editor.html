@@ -921,12 +921,17 @@
   // 孩子
   // =========================================================
   let kidsSaved = '';
+  // 朗读语速：慢、中、快三档的播放速度（1 = 录音原速）；设备自带朗读时练习页再乘 0.8
+  const RATE_NAMES = ['慢', '中', '快'], RATE_CLS = ['rslow', 'rmid', 'rfast'], DEFAULT_RATES = [0.7, 0.85, 1];
+  // 改成录音以前的默认值（设备自带朗读的 rate），按新的默认值显示
+  const kidRates = k => (Array.isArray(k.rates) && k.rates.length === 3 && String(k.rates) !== '0.55,0.7,0.85' ? k.rates : DEFAULT_RATES);
   function kidRow(k) {
     // 每个孩子一张卡片：上面是名字、PIN、删除；下面的设置区每行左边是项目名，右边是设置
     const row = document.createElement('div');
     row.className = 'kid-row';
     row.dataset.id = k.id || '';
     const num = (cls, min, max, ph) => '<input type="number" class="' + cls + '" min="' + min + '" max="' + max + '" placeholder="' + ph + '">';
+    const rnum = (cls, ph) => '<input type="number" class="' + cls + '" min="0.5" max="1.5" step="0.05" placeholder="' + ph + '">';
     const line = (label, html, cls) => '<div class="kset' + (cls ? ' ' + cls : '') + '"><span class="klbl">' + label + '</span><div class="kval">' + html + '</div></div>';
     const rid = 'm' + Math.random().toString(36).slice(2, 8);
     const count = g => cfg.lists.filter(l => groupKey(l) === g).length;
@@ -946,12 +951,14 @@
       + line('难度', '<select class="level"><option value="auto">自动</option><option value="easy">简单</option><option value="medium">进阶</option><option value="dictation">听写</option></select>'
           + ' 自动时答对 ' + num('lvmed', 1, 19, 2) + ' 次升进阶，' + num('lvdict', 2, 20, 4) + ' 次升听写 <small>最近答错过的词仍用简单</small>')
       + line('挖空', '每道题最多挖 ' + num('maxblanks', 1, 30, 8) + ' 个字母 <small>简单和进阶；听写不限</small>')
+      + line('朗读语速', RATE_NAMES.map((n, i) => n + ' ' + rnum(RATE_CLS[i], DEFAULT_RATES[i])).join('　') + ' <small>1 = 录音原速，0.5–1.5；孩子在练习页选用哪一档（没有录音时用设备自带朗读，会再慢一点）</small>')
       + '</div>';
     const set = (sel, v) => { row.querySelector(sel).value = v; };
     set('.name', k.name || ''); set('.pin', k.pin || '');
     set('.goal', k.goal || 20); set('.tries', k.tries || 6); set('.round', k.round || 20);
     set('.daily', k.daily || 30); set('.newcap', k.newCap != null ? k.newCap : 5);
     set('.level', k.level || 'auto'); set('.lvmed', k.lvMed || 2); set('.lvdict', k.lvDict || 4); set('.maxblanks', k.maxBlanks || 8);
+    RATE_CLS.forEach((c, i) => set('.' + c, kidRates(k)[i]));
     // 能用的单词表组：全部（包括以后新增的）或指定几个组
     const lb = row.querySelector('.kid-lists');
     const some = Array.isArray(k.groups);
@@ -989,6 +996,7 @@
       lvMed: r.querySelector('.lvmed').value.trim() === '' ? 2 : Number(r.querySelector('.lvmed').value), // 留空按默认 2
       lvDict: r.querySelector('.lvdict').value.trim() === '' ? 4 : Number(r.querySelector('.lvdict').value), // 留空按默认 4
       maxBlanks: r.querySelector('.maxblanks').value.trim() === '' ? 8 : Number(r.querySelector('.maxblanks').value), // 留空按默认 8
+      rates: RATE_CLS.map((c, i) => (r.querySelector('.' + c).value.trim() === '' ? DEFAULT_RATES[i] : Number(r.querySelector('.' + c).value))), // 留空按默认
       groups: r.querySelector('.kid-lists input[value="some"]').checked // null 表示全部单词表
         ? [...r.querySelectorAll('.kid-lists .picks input:checked')].map(c => c.value) : null,
     }));
@@ -1024,6 +1032,8 @@
       if (!(Number.isInteger(k.lvMed) && k.lvMed >= 1 && k.lvMed <= 19)) return message('kidMsg', k.name + ' 的“答对几次升进阶”需要在 1–19 之间。', false);
       if (!(Number.isInteger(k.maxBlanks) && k.maxBlanks >= 1 && k.maxBlanks <= 30)) return message('kidMsg', k.name + ' 的“每道题最多挖几个字母”需要在 1–30 之间。', false);
       if (!(Number.isInteger(k.lvDict) && k.lvDict > k.lvMed && k.lvDict <= 20)) return message('kidMsg', k.name + ' 的“答对几次升听写”要比升进阶的次数多，最多 20。', false);
+      if (!k.rates.every(x => Number.isFinite(x) && x >= 0.5 && x <= 1.5)) return message('kidMsg', k.name + ' 的朗读语速需要在 0.5–1.5 之间。', false);
+      if (!(k.rates[0] <= k.rates[1] && k.rates[1] <= k.rates[2])) return message('kidMsg', k.name + ' 的朗读语速要按 慢 ≤ 中 ≤ 快 填写。', false);
       if (k.groups && !k.groups.length) return message('kidMsg', k.name + ' 选了“指定分组”，请至少勾选一个分组。', false);
     }
     const removed = cfg.children.filter(c => !kids.some(k => k.id === c.id));
@@ -1323,7 +1333,7 @@
       message('importMsg', '正在导入单词表和孩子…', true);
       const r1 = await admin('importConfig', {
         lists: d.config.lists.map(l => ({ id: l.id, name: l.name, roundSize: l.roundSize, group: l.group, text: (d.wordlists || {})[l.id] || '', apply: opt.lists })),
-        children: d.config.children.map(c => ({ id: c.id, name: c.name, pin: c.pin, goal: c.goal, tries: c.tries, round: c.round, daily: c.daily, newCap: c.newCap, groups: c.groups, level: c.level, lvMed: c.lvMed, lvDict: c.lvDict, maxBlanks: c.maxBlanks, apply: opt.kids })),
+        children: d.config.children.map(c => ({ id: c.id, name: c.name, pin: c.pin, goal: c.goal, tries: c.tries, round: c.round, daily: c.daily, newCap: c.newCap, groups: c.groups, level: c.level, lvMed: c.lvMed, lvDict: c.lvDict, maxBlanks: c.maxBlanks, rates: c.rates, apply: opt.kids })),
       });
       cfg = r1.config;
       const lines = [];

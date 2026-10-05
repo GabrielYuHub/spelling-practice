@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>朗读测试</title>
+<style>
+  body { font-family: -apple-system, "PingFang SC", sans-serif; margin: 20px; background: #f0f4f8; color: #333; }
+  h1 { font-size: 22px; margin: 0 0 12px; }
+  .row { margin: 12px 0; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  input[type=text] { width: min(640px, 100%); font-size: 18px; padding: 8px; }
+  select { font-size: 16px; padding: 6px; max-width: 100%; }
+  button { font-size: 16px; padding: 8px 14px; border-radius: 8px; border: 1px solid #b9cde3; background: #fff; cursor: pointer; }
+  button.on { background: #2b6cb0; color: #fff; border-color: #2b6cb0; }
+  button.go { background: #1e88e5; color: #fff; border: none; font-size: 18px; padding: 10px 24px; }
+  #log { background: #111; color: #9f9; font: 13px/1.5 Menlo, monospace; padding: 10px; border-radius: 8px; white-space: pre-wrap; min-height: 200px; }
+  #sent span.at { background: #ffe082; }
+  #sent { font-size: 20px; margin: 8px 0; }
+  small { color: #777; }
+</style>
+</head>
+<body>
+<h1>朗读测试</h1>
+<div class="row"><input type="text" id="text" value="James, what's your goal for the new term?"></div>
+<div class="row">声音：<select id="voice"></select> <small id="vinfo"></small></div>
+<div class="row">语速：<span id="rates"></span></div>
+<div class="row"><label><input type="checkbox" id="wa"> 同时开着网页音效通道（模拟答题页的按键声）</label></div>
+<div class="row"><button class="go" id="go">▶ 朗读</button><button id="stop">⏹ 停止</button><button id="clear">清空记录</button></div>
+<div id="sent"></div>
+<div id="log"></div>
+<script>
+  const $ = id => document.getElementById(id);
+  const RATES = [0.55, 0.7, 0.85, 1];
+  let rate = 0.7, actx = null, osc = null;
+  const log = s => { const t = new Date(); $('log').textContent += t.toTimeString().slice(3, 8) + '.' + String(t.getMilliseconds()).padStart(3, '0') + '  ' + s + '\n'; };
+  $('rates').innerHTML = RATES.map(r => '<button data-r="' + r + '">' + r + '</button>').join(' ');
+  const markRate = () => $('rates').querySelectorAll('button').forEach(b => b.classList.toggle('on', Number(b.dataset.r) === rate));
+  $('rates').addEventListener('click', e => { if (e.target.dataset.r) { rate = Number(e.target.dataset.r); markRate(); } });
+  markRate();
+  function loadVoices() {
+    const vs = speechSynthesis.getVoices().filter(v => /^en/i.test(v.lang));
+    const sel = $('voice'), keep = sel.value;
+    sel.innerHTML = '<option value="">（不指定，只用 en-US）</option>' + vs.map((v, i) => '<option value="' + v.voiceURI + '">' + v.name + ' — ' + v.lang + (v.localService ? '' : '（在线）') + '</option>').join('');
+    sel.value = keep || (vs.find(v => v.name === 'Samantha') || {}).voiceURI || '';
+    showInfo();
+  }
+  function showInfo() { const v = curVoice(); $('vinfo').textContent = v ? v.voiceURI : ''; }
+  const curVoice = () => speechSynthesis.getVoices().find(v => v.voiceURI === $('voice').value) || null;
+  $('voice').addEventListener('change', showInfo);
+  loadVoices();
+  speechSynthesis.onvoiceschanged = loadVoices;
+  $('wa').addEventListener('change', () => {
+    if ($('wa').checked) {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      actx.resume();
+      osc = actx.createOscillator(); const g = actx.createGain(); g.gain.value = 0.0001; osc.connect(g).connect(actx.destination); osc.start();
+      log('音效通道：开 ' + actx.sampleRate + ' Hz');
+    } else { if (osc) osc.stop(); osc = null; if (actx) actx.suspend(); log('音效通道：关'); }
+  });
+  $('go').addEventListener('click', () => {
+    speechSynthesis.cancel();
+    const text = $('text').value, v = curVoice();
+    setTimeout(() => {
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = v ? v.lang : 'en-US'; u.rate = rate;
+      if (v) u.voice = v;
+      window.__u = u;
+      const t0 = Date.now();
+      u.onstart = () => log('开始出声（' + (Date.now() - t0) + ' 毫秒）');
+      u.onboundary = e => {
+        const w = text.slice(e.charIndex).split(/\s/)[0];
+        log('读到：' + w + '（第 ' + e.charIndex + ' 个字符，' + (Date.now() - t0) + ' 毫秒）');
+        $('sent').innerHTML = text.slice(0, e.charIndex).replace(/</g, '&lt;') + '<span class="at">' + w.replace(/</g, '&lt;') + '</span>' + text.slice(e.charIndex + w.length).replace(/</g, '&lt;');
+      };
+      u.onend = () => log('读完（共 ' + (Date.now() - t0) + ' 毫秒）');
+      u.onerror = e => log('出错：' + e.error);
+      log('—— 读：声音 ' + (v ? v.name : '默认') + '，语速 ' + rate + (osc ? '，音效通道开着' : ''));
+      speechSynthesis.speak(u);
+    }, 150);
+  });
+  $('stop').addEventListener('click', () => { speechSynthesis.cancel(); log('停止'); });
+  $('clear').addEventListener('click', () => { $('log').textContent = ''; });
+  log(navigator.userAgent.includes('Chrome') ? '浏览器：Chrome 内核' : navigator.userAgent.includes('Safari') ? '浏览器：Safari' : '浏览器：' + navigator.userAgent);
+</script>
+</body>
+</html>

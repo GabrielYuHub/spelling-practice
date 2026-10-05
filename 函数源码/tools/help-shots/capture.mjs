@@ -23,8 +23,9 @@ const rect = async (sel, maxH) => ev(`const e=${sel}; const r=e.getBoundingClien
 const B = 'http://localhost:8770/';
 const KIDS = await (await fetch(B + 'api/app?op=config')).json();
 const hong = KIDS.children.find(c => c.name === '小红').id;
-// 屏蔽朗读（无界面浏览器没有语音）
-const noSpeech = `speechSynthesis.speak = u => { window.__last = u.text; setTimeout(() => u.onend && u.onend(), 50); }; speechSynthesis.cancel = () => {};`;
+// 屏蔽朗读（无界面浏览器没有语音）：录音一律放不了，改用自带朗读；自带朗读读的就是单词本身（不做多音词纠正），记在 __last 里用来答题
+const noSpeech = `HTMLMediaElement.prototype.play = function () { return Promise.reject(new Error('截图时不放录音')); }; WordLib.sayWord = w => w.en;`
+  + `speechSynthesis.speak = u => { window.__last = u.text; setTimeout(() => u.onend && u.onend(), 1200); }; speechSynthesis.cancel = () => {};`; // 像真的一样读 1.2 秒，例句才会停留够久
 
 // ① 你是谁 ② PIN
 await go(B); await ev(`localStorage.clear()`); await go(B, 2000);
@@ -44,13 +45,13 @@ await ev(`localStorage.setItem('spell_session', JSON.stringify({child:${JSON.str
 await go(B, 2500);
 await ev(noSpeech + `[...document.querySelectorAll('#cards .card')].find(c => c.innerText.includes('学新词')).click();`); await sleep(1200);
 await shot('kid-preview');
-await ev(noSpeech + `document.getElementById('studyStart').click();`); await sleep(1200);
+await ev(noSpeech + `document.getElementById('studyStart').click();`); await sleep(2000);
 await ev(`const w=window.__last, chs=[...document.querySelectorAll('#word .ch')]; const slots=chs.map((c,i)=>c.classList.contains('slot')?i:-1).filter(i=>i>=0); document.dispatchEvent(new KeyboardEvent('keydown',{key:w[slots[0]],bubbles:true}));`);
 await sleep(500); await shot('kid-game');
 await ev(`const w=window.__last, chs=[...document.querySelectorAll('#word .ch')]; chs.forEach((c,i)=>{ if (c.classList.contains('slot') && c.textContent.trim()==='' ) document.dispatchEvent(new KeyboardEvent('keydown',{key:w[i],bubbles:true})); }); document.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));`);
 await sleep(2000); await shot('kid-example');
 // ⑦ 答错后的提示
-await sleep(2500);
+await sleep(3500);
 await ev(`const w=window.__last, chs=[...document.querySelectorAll('#word .ch')]; let k=0; chs.forEach((c,i)=>{ if (c.classList.contains('slot')) document.dispatchEvent(new KeyboardEvent('keydown',{key: k++===0 ? w[i] : (w[i]==='z'?'x':'z'),bubbles:true})); }); document.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));`);
 await sleep(1500); await shot('kid-wrong'); // 答错后：填对的保留，填错的标红，出现“看答案”
 

@@ -40,7 +40,7 @@ test('完整备份导出后合并导入到新环境：数据一致，重复导�
   const api = fresh();
   await api.get('config');
   const fruit = (await api.admin('saveList', { list: { name: '课外 水果' }, text: 'apple 苹果\npear 梨' })).data.id;
-  await api.admin('saveChildren', { children: [{ id: 'c_default', name: '小朋友', pin: '0000', goal: 15, tries: 4, round: 10, groups: ['课外'] }, { name: '小红', pin: '1111' }] });
+  await api.admin('saveChildren', { children: [{ id: 'c_default', name: '小朋友', pin: '0000', goal: 15, tries: 4, round: 10, groups: ['课外'], rates: [0.5, 0.6, 0.9] }, { name: '小红', pin: '1111' }] });
   for (let i = 0; i < 3; i++) await record(api, { id: recordId(fruit, 'bk0' + i, Date.now() - i * 1000), events: [ev('apple', i > 0), ev('pear', true)] });
   const backup = JSON.parse(JSON.stringify(await exportAll(api)));
   assert.equal(backup.records.c_default.length, 3);
@@ -56,7 +56,7 @@ test('完整备份导出后合并导入到新环境：数据一致，重复导�
 
   const cfg = (await api2.admin('config')).data;
   const kid = cfg.children.find(c => c.name === '小朋友');
-  assert.deepEqual([kid.pin, kid.goal, kid.tries, kid.round, kid.groups], ['0000', 15, 4, 10, ['课外']]);
+  assert.deepEqual([kid.pin, kid.goal, kid.tries, kid.round, kid.groups, kid.rates], ['0000', 15, 4, 10, ['课外'], [0.5, 0.6, 0.9]]);
   const newFruit = cfg.lists.find(l => l.name === '课外 水果').id;
   assert.match((await api2.get('list', { id: newFruit })).data.text, /apple/);
   const recs = (await api2.admin('records', { child: kid.id })).data.records;

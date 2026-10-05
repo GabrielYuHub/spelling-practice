@@ -4,6 +4,7 @@
 // 数据存在文档型数据库的集合 spell_kv 中，每条记录是一个“键 → 文本”
 // PASSWORD 在打包时通过文件开头的配置注入；ASSETS 由打包脚本生成
 import tcb from '@cloudbase/node-sdk';
+import https from 'https';
 import ASSETS from 'site-assets';
 import { handleGet, handlePost } from './core.js';
 
@@ -101,7 +102,32 @@ function defaultWords() {
   return m ? m[1].replace(/^\s*\n/, '') : null;
 }
 
-const env = { store, password: PASSWORD, loadDefaultWords: async () => defaultWords() };
+// 有道词典的发音（美音 mp3）：返回 base64；有道没有这个发音（返回 500 “null audio”）时返回 null；网络出错或超时返回 undefined
+// 有道偶尔会对有发音的句子也返回 500，所以隔 0.3 秒再问一次。免费版云函数最多运行 3 秒，所以每次最多等 1 秒
+async function youdao(text) {
+  const a = await youdaoOnce(text);
+  if (a !== null) return a;
+  await new Promise(res => setTimeout(res, 300));
+  return youdaoOnce(text);
+}
+function youdaoOnce(text) {
+  return new Promise(resolve => {
+    const req = https.get('https://dict.youdao.com/dictvoice?type=2&audio=' + encodeURIComponent(text), { timeout: 1000 }, res => {
+      const audio = res.statusCode === 200 && /audio/.test(res.headers['content-type'] || '');
+      if (!audio) { res.resume(); resolve(res.statusCode === 500 ? null : undefined); return; }
+      const chunks = [];
+      let size = 0;
+      res.on('data', d => { size += d.length; if (size > 400000) { req.destroy(); resolve(undefined); } else chunks.push(d); });
+      res.on('end', () => resolve(size ? Buffer.concat(chunks).toString('base64') : null));
+      res.on('error', () => resolve(undefined));
+    });
+    req.on('timeout', () => { req.destroy(); resolve(undefined); });
+    req.on('error', () => resolve(undefined));
+  });
+}
+
+// 测试时可以用 globalThis.__fetchAudio 代替真的去有道取
+const env = { store, password: PASSWORD, loadDefaultWords: async () => defaultWords(), fetchAudio: text => (globalThis.__fetchAudio || youdao)(text) };
 
 const reply = (statusCode, contentType, body, extra, base64) => ({
   statusCode,
